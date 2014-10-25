@@ -53,10 +53,11 @@ if __name__ == "__main__":
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_RETURN:
                     for platform in active_object_list:
-                        print "["+",".join([`platform.rect.x`, `platform.rect.y`, `platform.rect.width`, `platform.rect.height`])+", grass]"
+                        print "["+",".join([`platform.rect.x`, `platform.rect.y`, `platform.rect.width`, `platform.rect.height`])+", grass],"
                 if event.key == pygame.K_BACKSPACE:
-                    if to_draw:
-                        to_draw.pop()
+                    list_sprites = active_object_list.sprites()
+                    if list_sprites:
+                        active_object_list.remove(list_sprites[-1])
 
         window.fill(black)
         active_object_list.draw(window)

@@ -1,7 +1,7 @@
 #!/usr/bin/python
 
 import pygame
-from lib.spriteblock import SpriteBlock
+from gfx.spriteblock import SpriteBlock
 
 if __name__ == "__main__":
     pygame.init()
@@ -18,8 +18,8 @@ if __name__ == "__main__":
     pygame.display.update()
 
     active_object_list = pygame.sprite.Group()
-    block1 = SpriteBlock((100, 0), (300, 45), ['data/grass-no-rocks.png', 'data/soil.png'])
-    block2 = SpriteBlock((0, 150), (10, 200), ['data/grass-no-rocks.png', 'data/soil.png'])
+    block1 = SpriteBlock((100, 0), (300, 45), ['data/grass-no-rocks.png', 'data/grass-no-rocks-filler.png'])
+    block2 = SpriteBlock((0, 150), (10, 200), ['data/grass-no-rocks.png', 'data/grass-no-rocks-filler.png'])
     active_object_list.add(block1, block2)
 
     running = True

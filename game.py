@@ -5,7 +5,8 @@ LEFT = 2
 
 import pygame
 from pygame.color import THECOLORS
-from lib.spriteblock import SpriteBlock
+from pygame import Rect
+from gfx.spritefiller import SpriteFiller
 
 class Player(pygame.sprite.Sprite):
 
@@ -203,7 +204,7 @@ class Level_01(Level):
         self.collect_object_list.add(egg)
 
         color = pygame.Color(0x66, 0xFF, 0x66)
-        grass = ['data/grass-no-rocks.png', 'data/soil.png']
+        grass = ['data/grass-no-rocks.png', 'data/grass-no-rocks-filler.png']
         level = [
             # [x, y, width, height, sprite ]
                 [662,518,209,168, grass],
@@ -225,13 +226,13 @@ class Level_01(Level):
         ]
 
         for x, y, width, height, sprite in level:
-            new_block = SpriteBlock((x, y), (width, height), sprite)
+            new_block = SpriteFiller(Rect((x, y), (width, height)), sprite)
             self.collide_object_list.add(new_block)
 
 
 def set_message(text):
     global message, previous_message
-    message = font.render(text, True, THECOLORS['black'],THECOLORS['white'])
+    message = font.render(text, True, THECOLORS['black'], THECOLORS['white'])
     previous_message = message
 
 if __name__ == "__main__":

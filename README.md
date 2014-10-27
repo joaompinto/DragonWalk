@@ -6,5 +6,5 @@ Code based on the RootOfTheNull's pygame tutorial:
 
 Watching the entire tutorial is strongly recommended.
 
-Assests from:
+Assets from:
 http://www.ironstarmedia.co.uk/2010/01/free-game-assets-09-generic-platform-game-tiles/

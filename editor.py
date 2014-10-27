@@ -1,8 +1,9 @@
 #!/usr/bin/python
 
 import pygame
-from lib.block import Block
-from lib.spriteblock import SpriteBlock
+from gfx.spritefiller import SpriteFiller
+from pygame import Rect
+from pygame.color import THECOLORS
 
 if __name__ == "__main__":
     pygame.init()
@@ -34,14 +35,21 @@ if __name__ == "__main__":
             if event.type == pygame.MOUSEMOTION:
                 mouse_pos = mouse_x, mouse_y = pygame.mouse.get_pos()
                 if drawing_block:
+                    draw_start_x, draw_start_y = [drawing_block.rect.x, drawing_block.rect.y]
                     width = mouse_pos[0] - pos[0]
                     height = mouse_pos[1] - pos[1]
-                    if width > -1 and height > -1:
-                        drawing_block.resize(width, height)
+                    if width < 0:
+                        width = abs(width)
+                        draw_start_x = mouse_x
+                    if height < 0:
+                        height = abs(height)
+                        draw_start_y = mouse_y
+                    drawing_block.set_position(draw_start_x, draw_start_y)
+                    drawing_block.resize(width, height)
 
             if event.type == pygame.MOUSEBUTTONDOWN:
                 pos = mouse_pos
-                drawing_block = SpriteBlock(mouse_pos, (0, 0), ['data/grass-no-rocks.png', 'data/soil.png'])
+                drawing_block = SpriteFiller(Rect(mouse_pos, (0, 0)), ['data/blocks/snow.png', 'data/blocks/snow-filler.png'])
                 active_object_list.add(drawing_block)
 
                 draw_start_box = True
@@ -61,6 +69,8 @@ if __name__ == "__main__":
 
         window.fill(black)
         active_object_list.draw(window)
+        if drawing_block:
+            pygame.draw.rect(window, THECOLORS['red'], drawing_block.rect, 1)
         pygame.display.update()
         clock.tick(fps)
 

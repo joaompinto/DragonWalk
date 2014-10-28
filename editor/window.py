@@ -16,8 +16,10 @@ class TopWindow:
         self.collisionSprite = pygame.sprite.Sprite()  # Dummy sprite for draw block collision detection
         self.active_object_list = pygame.sprite.Group()
         self.drawing_block = None
-        self.drawing_start_pos = [0, 0]
-        self.mouse_last_pos = [0, 0]
+        self.drawing_base_pos = [0, 0]
+        self.drawing_moving_pos = [0, 0]
+        self.hspeed = 0
+        self.vspeed = 0
 
     def run_event_loop(self):
 
@@ -31,6 +33,7 @@ class TopWindow:
             self.window.fill(THECOLORS['black'])
             self.active_object_list.draw(surface)
             if self.drawing_block:
+                surface.blit(self.drawing_block.image, self.drawing_block.rect)
                 pygame.draw.rect(surface, THECOLORS['red'], self.drawing_block.rect, 1)
             pygame.display.update()
 
@@ -58,64 +61,96 @@ class TopWindow:
                     self.active_object_list.remove(list_sprites[-1])
         return True
 
+    def adjust_drawing_block(self, x, y):
+            if x:
+                self.drawing_moving_pos[0] += self.hspeed
+            if y:
+                self.drawing_moving_pos[1] += self.vspeed
+            block_delta_x = self.drawing_moving_pos[0] - self.drawing_base_pos[0]
+            block_delta_y = self.drawing_moving_pos[1] - self.drawing_base_pos[1]
+            width, height = abs(block_delta_x), abs(block_delta_y)
+            draw_x = self.drawing_moving_pos[0] if block_delta_x < 0 else self.drawing_base_pos[0]
+            draw_y = self.drawing_moving_pos[1] if block_delta_y < 0 else self.drawing_base_pos[1]
+            self.drawing_block.set_position(draw_x, draw_y)
+            self.drawing_block.resize(width, height)
+            return draw_x, draw_y, width, height
+
     def check_mouse_events(self, event):
+
         mouse_pos = mouse_x, mouse_y = pygame.mouse.get_pos()
-        if event.type == pygame.MOUSEMOTION:
-            moving_right = mouse_x > self.drawing_start_pos[0]
-            moving_left = mouse_x < self.drawing_start_pos[0]
-            moving_up = mouse_y < self.drawing_start_pos[1]
-            moving_down = mouse_y > self.drawing_start_pos[1]
-            if self.drawing_block:
-                draw_start_x, draw_start_y = [self.drawing_block.rect.x, self.drawing_block.rect.y]
-                width = mouse_pos[0] - self.drawing_start_pos[0]
-                height = mouse_pos[1] - self.drawing_start_pos[1]
-                if width < 0:
-                    width = abs(width)
-                    draw_start_x = mouse_x
-                if height < 0:
-                    height = abs(height)
-                    draw_start_y = mouse_y
 
-                # Check horizontal collisions
-                self.collisionSprite.rect = collisionRect = Rect(draw_start_x, draw_start_y, width, height)
-                collision_list = pygame.sprite.spritecollide(self.collisionSprite, self.active_object_list, False)
-                for collider in collision_list:
-                    if collider == self.drawing_block:  # Can collide with itself
-                        continue
-                    if moving_right and collisionRect.left < collider.rect.left:
-                        width = min(collider.rect.left - self.drawing_start_pos[0], width-1)
-                    if moving_left and collisionRect.right > collider.rect.right:
-                        draw_start_x = max(collider.rect.right, draw_start_x)
-                        width = min(self.drawing_start_pos[0]-collider.rect.right-1, width)
+        if self.drawing_block:
 
-                # Check vertical collisions
-                self.collisionSprite.rect = Rect(draw_start_x, draw_start_y, width, height)
-                collision_list = pygame.sprite.spritecollide(self.collisionSprite, self.active_object_list, False)
-                for collider in collision_list:
-                    if collider == self.drawing_block:  # Can collide with itself
-                        continue
-                    if moving_down:
-                        height = min(collider.rect.top - self.drawing_start_pos[1], height-1)
-                    if moving_up:
-                        draw_start_y = max(collider.rect.bottom, draw_start_y)
-                        height = min(self.drawing_start_pos[1]-collider.rect.bottom, height)
+            colliding_right = colliding_left = colliding_down = colliding_up = False
+
+            # Apply horizontal speed
+            draw_x, draw_y, width, height = self.adjust_drawing_block(True, False)
+            block_delta_x = self.drawing_moving_pos[0] - self.drawing_base_pos[0]
+            collision_list = pygame.sprite.spritecollide(self.drawing_block, self.active_object_list, False)
+            print self.drawing_block.rect.width
+            for collided_object in collision_list:
+                if block_delta_x > 0:
+                    width = collided_object.rect.left - draw_x
+                    self.drawing_moving_pos[0] = collided_object.rect.left
+                    self.drawing_block.resize(width, height)
+                    colliding_right = True
+                if block_delta_x < 0:
+                    self.drawing_moving_pos[0] = collided_object.rect.right
+                    self.drawing_block.resize(width, height)
+                    colliding_left = True
+
+            draw_x, draw_y, width, height = self.adjust_drawing_block(False, True)
+            print "After adjust drawing", self.drawing_block.rect.width
+            block_delta_y = self.drawing_moving_pos[1] - self.drawing_base_pos[1]
+            collision_list = pygame.sprite.spritecollide(self.drawing_block, self.active_object_list, False)
+            for collided_object in collision_list:
+                if block_delta_y > 0:
+                    height = collided_object.rect.top - draw_y
+                    self.drawing_moving_pos[1] = collided_object.rect.top
+                    self.drawing_block.resize(width, height)
+                    colliding_down = True
+                if block_delta_y < 0:
+                    self.drawing_moving_pos[1] = collided_object.rect.bottom
+                    self.drawing_block.resize(width, height)
+                    colliding_up = True
+
+            self.adjust_drawing_block(False, False)
 
 
+            # Apply motion
+            block_delta_x = self.drawing_moving_pos[0] - self.drawing_base_pos[0]
+            change = mouse_x - self.drawing_moving_pos[0]
+            print "change is", change, self.hspeed
+            if colliding_right:
+                if change < 0:
+                    self.hspeed = change
+            elif colliding_left:
+                if block_delta_x > 0:
+                    self.hspeed = change
+            else:
+                self.hspeed = change
 
-                print moving_right, moving_left, moving_up, moving_down
-                print width, height
-                self.drawing_block.set_position(draw_start_x, draw_start_y)
-                self.drawing_block.resize(width, height)
+            block_delta_y = self.drawing_moving_pos[1] - self.drawing_base_pos[1]
+            change = mouse_y - self.drawing_moving_pos[1]
+            if colliding_down:
+                if change < 0:
+                    self.vspeed = change
+            elif colliding_up:
+                if change > 0:
+                    self.vspeed = change
+            else:
+                self.vspeed = change
 
-            self.mouse_last_pos = mouse_pos
 
         if event.type == pygame.MOUSEBUTTONDOWN:
-            self.drawing_start_pos = mouse_pos
+            self.drawing_base_pos = mouse_pos
+            self.drawing_moving_pos = [mouse_pos[0], mouse_pos[1]]
             self.drawing_block = SpriteFiller(Rect(mouse_pos, (0, 0)), ['data/blocks/snow.png', 'data/blocks/snow-filler.png'])
             if pygame.sprite.spritecollide(self.drawing_block, self.active_object_list, False):
                 self.drawing_block = None
-            else:
-                self.active_object_list.add(self.drawing_block)
 
         if event.type == pygame.MOUSEBUTTONUP:
+            if self.drawing_block:
+                self.active_object_list.add(self.drawing_block)
             self.drawing_block = None
+

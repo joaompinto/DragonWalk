@@ -61,11 +61,7 @@ class TopWindow:
                     self.active_object_list.remove(list_sprites[-1])
         return True
 
-    def adjust_drawing_block(self, x, y):
-            if x:
-                self.drawing_moving_pos[0] += self.hspeed
-            if y:
-                self.drawing_moving_pos[1] += self.vspeed
+    def adjust_drawing_block(self):
             block_delta_x = self.drawing_moving_pos[0] - self.drawing_base_pos[0]
             block_delta_y = self.drawing_moving_pos[1] - self.drawing_base_pos[1]
             width, height = abs(block_delta_x), abs(block_delta_y)
@@ -84,7 +80,8 @@ class TopWindow:
             colliding_right = colliding_left = colliding_down = colliding_up = False
 
             # Apply horizontal speed
-            draw_x, draw_y, width, height = self.adjust_drawing_block(True, False)
+            self.drawing_moving_pos[0] += self.hspeed
+            draw_x, draw_y, width, height = self.adjust_drawing_block()
             block_delta_x = self.drawing_moving_pos[0] - self.drawing_base_pos[0]
             collision_list = pygame.sprite.spritecollide(self.drawing_block, self.active_object_list, False)
             print self.drawing_block.rect.width
@@ -99,7 +96,8 @@ class TopWindow:
                     self.drawing_block.resize(width, height)
                     colliding_left = True
 
-            draw_x, draw_y, width, height = self.adjust_drawing_block(False, True)
+            self.drawing_moving_pos[1] += self.vspeed
+            draw_x, draw_y, width, height = self.adjust_drawing_block()
             print "After adjust drawing", self.drawing_block.rect.width
             block_delta_y = self.drawing_moving_pos[1] - self.drawing_base_pos[1]
             collision_list = pygame.sprite.spritecollide(self.drawing_block, self.active_object_list, False)
@@ -114,23 +112,21 @@ class TopWindow:
                     self.drawing_block.resize(width, height)
                     colliding_up = True
 
-            self.adjust_drawing_block(False, False)
+            self.adjust_drawing_block()
 
 
             # Apply motion
-            block_delta_x = self.drawing_moving_pos[0] - self.drawing_base_pos[0]
             change = mouse_x - self.drawing_moving_pos[0]
             print "change is", change, self.hspeed
             if colliding_right:
                 if change < 0:
                     self.hspeed = change
             elif colliding_left:
-                if block_delta_x > 0:
+                if change > 0:
                     self.hspeed = change
             else:
                 self.hspeed = change
 
-            block_delta_y = self.drawing_moving_pos[1] - self.drawing_base_pos[1]
             change = mouse_y - self.drawing_moving_pos[1]
             if colliding_down:
                 if change < 0:

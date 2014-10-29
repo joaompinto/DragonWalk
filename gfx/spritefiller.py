@@ -35,6 +35,7 @@ class SpriteFiller(pygame.sprite.Sprite):
         self.rect.y = y
 
     def _build_image(self):
+        print self.rect.width, self.rect.height
         self.image = pygame.Surface([self.rect.width, self.rect.height])
         offset_y = 0
         current_image = self.top_image

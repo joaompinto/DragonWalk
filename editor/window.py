@@ -79,15 +79,18 @@ class TopWindow:
 
             colliding_right = colliding_left = colliding_down = colliding_up = False
 
-            # Apply horizontal speed
+            # Apply horizontal speed and check for horizontal collisions
             self.drawing_moving_pos[0] += self.hspeed
             draw_x, draw_y, width, height = self.adjust_drawing_block()
             block_delta_x = self.drawing_moving_pos[0] - self.drawing_base_pos[0]
             collision_list = pygame.sprite.spritecollide(self.drawing_block, self.active_object_list, False)
-            print self.drawing_block.rect.width
             for collided_object in collision_list:
                 if block_delta_x > 0:
                     width = collided_object.rect.left - draw_x
+                    print "width", width
+                    if width < 0:  # Work-around for bug in an undetermined collision condition
+                        self.drawing_block = None
+                        return
                     self.drawing_moving_pos[0] = collided_object.rect.left
                     self.drawing_block.resize(width, height)
                     colliding_right = True
@@ -96,14 +99,19 @@ class TopWindow:
                     self.drawing_block.resize(width, height)
                     colliding_left = True
 
+            # Apply vertical speed and check for vertical collisions
             self.drawing_moving_pos[1] += self.vspeed
             draw_x, draw_y, width, height = self.adjust_drawing_block()
-            print "After adjust drawing", self.drawing_block.rect.width
+
             block_delta_y = self.drawing_moving_pos[1] - self.drawing_base_pos[1]
             collision_list = pygame.sprite.spritecollide(self.drawing_block, self.active_object_list, False)
             for collided_object in collision_list:
-                if block_delta_y > 0:
+                if block_delta_y > 0: # Work-around for bug in an undetermined collision condition
                     height = collided_object.rect.top - draw_y
+                    print "height", height
+                    if height < 0:
+                        self.drawing_block = None
+                        return
                     self.drawing_moving_pos[1] = collided_object.rect.top
                     self.drawing_block.resize(width, height)
                     colliding_down = True
@@ -114,10 +122,8 @@ class TopWindow:
 
             self.adjust_drawing_block()
 
-
-            # Apply motion
+            # Set speed based on mouse movement, if not colliding
             change = mouse_x - self.drawing_moving_pos[0]
-            print "change is", change, self.hspeed
             if colliding_right:
                 if change < 0:
                     self.hspeed = change
@@ -137,16 +143,16 @@ class TopWindow:
             else:
                 self.vspeed = change
 
-
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.drawing_base_pos = mouse_pos
             self.drawing_moving_pos = [mouse_pos[0], mouse_pos[1]]
-            self.drawing_block = SpriteFiller(Rect(mouse_pos, (0, 0)), ['data/blocks/snow.png', 'data/blocks/snow-filler.png'])
+            self.drawing_block = SpriteFiller(Rect(mouse_pos, (0, 0)), ['data/blocks/grass-no-rocks.png', 'data/blocks/grass-no-rocks-filler.png'])
             if pygame.sprite.spritecollide(self.drawing_block, self.active_object_list, False):
                 self.drawing_block = None
 
         if event.type == pygame.MOUSEBUTTONUP:
             if self.drawing_block:
-                self.active_object_list.add(self.drawing_block)
+                if self.drawing_block.rect.width > 0 and self.drawing_block.rect.height > 0:
+                    self.active_object_list.add(self.drawing_block)
             self.drawing_block = None
 

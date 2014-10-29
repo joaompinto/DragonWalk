@@ -12,21 +12,29 @@ from pygame import Rect
 
 class SpriteFiller(pygame.sprite.Sprite):
 
-    def __init__(self, rect, image_list):
+    def __init__(self, rect, image_list, real_scale=False):
         super(SpriteFiller, self).__init__()
 
         # Set top and filler images
         self._image_list = image_list
-        top_image = pygame.image.load(image_list[0]).convert_alpha()
-        self.top_image = pygame.transform.scale(top_image, (64, 64))
+        self.real_scale = real_scale
+        self.rect = rect
+        self.top_image = pygame.image.load(image_list[0]).convert_alpha()
+        if not self.real_scale:
+            self.top_image = pygame.transform.scale(self.top_image, (64, 64))
+        else:
+            self.build_image()
         if len(image_list) > 1:
-            filler_image = pygame.image.load(image_list[1]).convert()
+            filler_image = pygame.image.load(image_list[1]).convert_alpha()
             self.filler_image = pygame.transform.scale(filler_image, (64, 64))
         else:
             self.filler_image = self.top_image
 
-        self.rect = rect
         self.build_image()
+
+    @property
+    def is_real_scale(self):
+        return self.real_scale
 
     @property
     def image_list(self):
@@ -38,6 +46,9 @@ class SpriteFiller(pygame.sprite.Sprite):
 
     @size.setter
     def size(self, width, height):
+        if self.real_scale:
+            width = min(width, self.top_image.get_rect().width)
+            height = min(height, self.top_image.get_rect().height)
 
         # Avoid costly image rebuild if there are no changes
         if self.rect.width != width or self.rect.height != height:
@@ -55,7 +66,11 @@ class SpriteFiller(pygame.sprite.Sprite):
         self.rect.y = y
 
     def build_image(self):
-        self.image = pygame.Surface([self.rect.width, self.rect.height])
+        self.image = pygame.Surface([self.rect.width, self.rect.height], pygame.SRCALPHA,)
+        if self.real_scale:
+            pygame.transform.scale(self.top_image, [self.rect.width, self.rect.height], self.image)
+            self.image.blit(self.image, (0, 0), None)
+            return
         offset_y = 0
         current_image = self.top_image
         print self.top_image, self.filler_image
@@ -73,8 +88,8 @@ class ElasticSpriteFiller(SpriteFiller):
     The ElasticSpriteFiller provides a SpriteFiller which is drawn starting at an unmovable base potion
     to a moving position. It is mostly useful for mouse oriented drawing.
     """
-    def __init__(self, base_position, image_list):
-        super(ElasticSpriteFiller, self).__init__(Rect(base_position, (0, 0)), image_list)
+    def __init__(self, base_position, image_list, real_scale=False):
+        super(ElasticSpriteFiller, self).__init__(Rect(base_position, (0, 0)), image_list, real_scale)
         self.base_position = base_position
         self.moving_position = list(base_position)
 

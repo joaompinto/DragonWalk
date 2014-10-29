@@ -22,6 +22,7 @@ class TopWindow:
         self.hspeed = 0
         self.vspeed = 0
         self.toolbox = toolbox = ToolBox(self.on_toolbox_change, 0, window_height-64)
+        self.is_real_scale = False
 
         for filename in glob('data/blocks/*.png'):
             if "-filler.png" in filename:
@@ -31,6 +32,10 @@ class TopWindow:
             if exists(filler_image):
                 image_list.append(filler_image)
             sprite = SpriteFiller(Rect(0, 0, 64, 64), image_list)
+            toolbox.add(sprite)
+
+        for filename in glob('data/objects/*.png'):
+            sprite = SpriteFiller(Rect(0, 0, 64, 64), [filename], real_scale=True)
             toolbox.add(sprite)
 
     def run_event_loop(self):
@@ -133,7 +138,8 @@ class TopWindow:
         if event.type == pygame.MOUSEBUTTONDOWN:
             if not self.drawing_block_image_list:
                 return
-            self.drawing_block = ElasticSpriteFiller(mouse_pos, self.drawing_block_image_list)
+            real_scale = self.is_real_scale
+            self.drawing_block = ElasticSpriteFiller(mouse_pos, self.drawing_block_image_list, real_scale)
             collision_list = pygame.sprite.spritecollide(self.drawing_block, self.active_object_list, False)
             if collision_list or event.button == 3:
                 self.drawing_block = None
@@ -152,3 +158,4 @@ class TopWindow:
 
     def on_toolbox_change(self, sprite):
         self.drawing_block_image_list = sprite.image_list
+        self.is_real_scale = sprite.is_real_scale

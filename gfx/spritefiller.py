@@ -16,16 +16,21 @@ class SpriteFiller(pygame.sprite.Sprite):
         super(SpriteFiller, self).__init__()
 
         # Set top and filler images
-        top_image = pygame.image.load(image_list[0]).convert()
+        self._image_list = image_list
+        top_image = pygame.image.load(image_list[0]).convert_alpha()
         self.top_image = pygame.transform.scale(top_image, (64, 64))
         if len(image_list) > 1:
             filler_image = pygame.image.load(image_list[1]).convert()
             self.filler_image = pygame.transform.scale(filler_image, (64, 64))
         else:
-            self.filler_image = top_image
+            self.filler_image = self.top_image
 
         self.rect = rect
-        self._build_image()
+        self.build_image()
+
+    @property
+    def image_list(self):
+        return self._image_list
 
     @property
     def size(self):
@@ -33,9 +38,12 @@ class SpriteFiller(pygame.sprite.Sprite):
 
     @size.setter
     def size(self, width, height):
-        self.rect.width = width
-        self.rect.height = height
-        self._build_image()
+
+        # Avoid costly image rebuild if there are no changes
+        if self.rect.width != width or self.rect.height != height:
+            self.rect.width = width
+            self.rect.height = height
+            self.build_image()
 
     @property
     def position(self):
@@ -50,6 +58,7 @@ class SpriteFiller(pygame.sprite.Sprite):
         self.image = pygame.Surface([self.rect.width, self.rect.height])
         offset_y = 0
         current_image = self.top_image
+        print self.top_image, self.filler_image
         while offset_y < self.rect.height:
             offset_x = 0
             while offset_x < self.rect.width:

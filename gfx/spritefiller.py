@@ -73,7 +73,6 @@ class SpriteFiller(pygame.sprite.Sprite):
             return
         offset_y = 0
         current_image = self.top_image
-        print self.top_image, self.filler_image
         while offset_y < self.rect.height:
             offset_x = 0
             while offset_x < self.rect.width:
@@ -85,8 +84,8 @@ class SpriteFiller(pygame.sprite.Sprite):
 
 class ElasticSpriteFiller(SpriteFiller):
     """
-    The ElasticSpriteFiller provides a SpriteFiller which is drawn starting at an unmovable base potion
-    to a moving position. It is mostly useful for mouse oriented drawing.
+    The ElasticSpriteFiller provides a SpriteFiller which will be drawn starting at an initial unmovable base potion
+    and finishing at the moving position. It is mostly useful for mouse oriented drawing.
     """
     def __init__(self, base_position, image_list, real_scale=False):
         super(ElasticSpriteFiller, self).__init__(Rect(base_position, (0, 0)), image_list, real_scale)

@@ -10,7 +10,6 @@ from pygame import Rect
     2) Place the first element at the top, and repeat the second element below; repeats horizontally
 """
 
-
 class SpriteObject(pygame.sprite.Sprite):
 
     def __init__(self, place_rect, image_filename):
@@ -26,17 +25,16 @@ class SpriteObject(pygame.sprite.Sprite):
 
     @size.setter
     def size(self, size):
-        self.rect.width, self.rect.height = size[0], size[1]
+        self.rect.width, self.rect.height = size
         self._resize_image()
 
     @property
     def position(self):
-        return self.rect.width, self.rect.height
+        return self.rect.x, self.rect.y
 
     @position.setter
     def position(self, position):
-        self.rect.x = position[0]
-        self.rect.y = position[1]
+        self.rect.x,  self.rect.y = position
 
     def _resize_image(self):
 
@@ -78,9 +76,7 @@ class SpriteFiller(pygame.sprite.Sprite):
 
     @size.setter
     def size(self, size):
-        #print "My size is changing to", size
-        width = size[0]
-        height = size[1]
+        width, height = size
         # Avoid costly image rebuild if there are no changes
         if self.rect.width != width or self.rect.height != height:
             self.rect.width = width
@@ -89,16 +85,13 @@ class SpriteFiller(pygame.sprite.Sprite):
 
     @property
     def position(self):
-        return self.rect.width, self.rect.height
+        return self.rect.x, self.rect.y
 
     @position.setter
     def position(self, position):
-        self.rect.x = position[0]
-        self.rect.y = position[1]
+        self.rect.x, self.rect.y = position
 
     def build_image(self):
-        print
-        print "Building image for ", id(self), self.rect
         self.image = pygame.Surface([self.rect.width, self.rect.height], pygame.SRCALPHA,)
         offset_y = 0
         current_image = self.top_image
@@ -129,6 +122,10 @@ class ElasticSprite(pygame.sprite.Sprite):
         self.moving_position = list(base_position)
         self.rect = sprite.rect
         self.image = sprite.image
+
+    @property
+    def position(self):
+        return self.sprite.position
 
     @property
     def moving_x(self):

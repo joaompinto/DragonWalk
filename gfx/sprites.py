@@ -1,4 +1,5 @@
 #!/bin/python
+# -*- coding: utf-8 -*-
 import pygame
 from pygame import Rect
 
@@ -10,20 +11,55 @@ from pygame import Rect
 """
 
 
+class SpriteObject(pygame.sprite.Sprite):
+
+    def __init__(self, place_rect, image_filename):
+        super(SpriteObject, self).__init__()
+        self.image_filename = image_filename
+        self.original_image = pygame.image.load(image_filename).convert_alpha()
+        self.rect = place_rect
+        self._resize_image()
+
+    @property
+    def size(self):
+        return self.rect.width, self.rect.height
+
+    @size.setter
+    def size(self, size):
+        self.rect.width, self.rect.height = size[0], size[1]
+        self._resize_image()
+
+    @property
+    def position(self):
+        return self.rect.width, self.rect.height
+
+    @position.setter
+    def position(self, position):
+        self.rect.x = position[0]
+        self.rect.y = position[1]
+
+    def _resize_image(self):
+
+        # Limit on the image original size
+        self.rect.width = min(self.rect.width, self.original_image.get_rect().width)
+        self.rect.height = min(self.rect.height, self.original_image.get_rect().height)
+
+        self.image = pygame.transform.scale(self.original_image, (self.rect.width, self.rect.height))
+
+    def copy(self):
+        return SpriteObject(Rect(self.rect), self.image_filename)
+
+
 class SpriteFiller(pygame.sprite.Sprite):
 
-    def __init__(self, rect, image_list, real_scale=False):
+    def __init__(self, rect, image_list):
         super(SpriteFiller, self).__init__()
 
         # Set top and filler images
         self._image_list = image_list
-        self.real_scale = real_scale
         self.rect = rect
         self.top_image = pygame.image.load(image_list[0]).convert_alpha()
-        if not self.real_scale:
-            self.top_image = pygame.transform.scale(self.top_image, (64, 64))
-        else:
-            self.build_image()
+        self.top_image = pygame.transform.scale(self.top_image, (64, 64))
         if len(image_list) > 1:
             filler_image = pygame.image.load(image_list[1]).convert_alpha()
             self.filler_image = pygame.transform.scale(filler_image, (64, 64))
@@ -31,10 +67,6 @@ class SpriteFiller(pygame.sprite.Sprite):
             self.filler_image = self.top_image
 
         self.build_image()
-
-    @property
-    def is_real_scale(self):
-        return self.real_scale
 
     @property
     def image_list(self):
@@ -45,11 +77,10 @@ class SpriteFiller(pygame.sprite.Sprite):
         return self.rect.width, self.rect.height
 
     @size.setter
-    def size(self, width, height):
-        if self.real_scale:
-            width = min(width, self.top_image.get_rect().width)
-            height = min(height, self.top_image.get_rect().height)
-
+    def size(self, size):
+        #print "My size is changing to", size
+        width = size[0]
+        height = size[1]
         # Avoid costly image rebuild if there are no changes
         if self.rect.width != width or self.rect.height != height:
             self.rect.width = width
@@ -61,16 +92,14 @@ class SpriteFiller(pygame.sprite.Sprite):
         return self.rect.width, self.rect.height
 
     @position.setter
-    def position(self, x, y):
-        self.rect.x = x
-        self.rect.y = y
+    def position(self, position):
+        self.rect.x = position[0]
+        self.rect.y = position[1]
 
     def build_image(self):
+        print
+        print "Building image for ", id(self), self.rect
         self.image = pygame.Surface([self.rect.width, self.rect.height], pygame.SRCALPHA,)
-        if self.real_scale:
-            pygame.transform.scale(self.top_image, [self.rect.width, self.rect.height], self.image)
-            self.image.blit(self.image, (0, 0), None)
-            return
         offset_y = 0
         current_image = self.top_image
         while offset_y < self.rect.height:
@@ -81,16 +110,25 @@ class SpriteFiller(pygame.sprite.Sprite):
             offset_y += current_image.get_rect().height
             current_image = self.filler_image
 
+    def copy(self):
+        return SpriteFiller(Rect(self.rect), self._image_list)
 
-class ElasticSpriteFiller(SpriteFiller):
+
+class ElasticSprite(pygame.sprite.Sprite):
     """
-    The ElasticSpriteFiller provides a SpriteFiller which will be drawn starting at an initial unmovable base potion
-    and finishing at the moving position. It is mostly useful for mouse oriented drawing.
+    ElasticSprite extends a sprite with a base point set during init, and a moving point that can be adjusted.
+    The sprite position and size will be adjusted based on the sprite moving point.
+    This is mainly useful for mouse drag based drawing
+
+    Using composition over inheritance for now -- João Pinto
     """
-    def __init__(self, base_position, image_list, real_scale=False):
-        super(ElasticSpriteFiller, self).__init__(Rect(base_position, (0, 0)), image_list, real_scale)
+    def __init__(self, sprite, base_position):
+        super(ElasticSprite, self).__init__()
+        self.sprite = sprite
         self.base_position = base_position
         self.moving_position = list(base_position)
+        self.rect = sprite.rect
+        self.image = sprite.image
 
     @property
     def moving_x(self):
@@ -122,13 +160,14 @@ class ElasticSpriteFiller(SpriteFiller):
     def adjust(self):
         """
         Adjust the position and size based on the base_pos / moving_pos vertices
-        :return:
         """
         block_delta_x = self.moving_position[0] - self.base_position[0]
         block_delta_y = self.moving_position[1] - self.base_position[1]
         width, height = abs(block_delta_x), abs(block_delta_y)
         draw_x = self.moving_position[0] if block_delta_x < 0 else self.base_position[0]
         draw_y = self.moving_position[1] if block_delta_y < 0 else self.base_position[1]
-        SpriteFiller.position.fset(self, draw_x, draw_y)
-        SpriteFiller.size.fset(self, width, height)
+        self.sprite.position = draw_x, draw_y
+        self.sprite.size = width, height
+        self.rect = self.sprite.rect
+        self.image = self.sprite.image
 

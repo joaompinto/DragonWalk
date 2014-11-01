@@ -1,24 +1,27 @@
 import pygame
-import math
+from os import environ
 from os.path import exists
 from glob import glob
 from pygame import Rect
 from pygame.color import THECOLORS
-from gfx.spritefiller import ElasticSpriteFiller, SpriteFiller
+from gfx.sprites import ElasticSprite, SpriteFiller, SpriteObject
 from gfx.toolbox import ToolBox
 
 class TopWindow:
 
     def __init__(self):
-        pygame.init()
 
+        environ['SDL_VIDEO_CENTERED'] = '1'
+        pygame.init()
         size = window_width, window_height = 1200, 1000
         self.window = pygame.display.set_mode(size)
         self.clock = pygame.time.Clock()
         self.frames_per_second = 60
         self.collisionSprite = pygame.sprite.Sprite()  # Dummy sprite for draw block collision detection
         self.active_object_list = pygame.sprite.Group()
+        self.selected_tool = None
         self.drawing_block = None
+        self.selected_object = None
         self.drawing_block_image_list = None
         self.hspeed = 0
         self.vspeed = 0
@@ -39,7 +42,7 @@ class TopWindow:
             toolbox.add(sprite)
 
         for filename in glob('data/objects/*.png'):
-            sprite = SpriteFiller(Rect(0, 0, 64, 64), [filename], real_scale=True)
+            sprite = SpriteObject(Rect(0, 0, 64, 64), filename)
             toolbox.add(sprite)
 
     def run_event_loop(self):
@@ -51,13 +54,13 @@ class TopWindow:
         pygame.quit()
 
     def draw(self, surface):
-            self.window.fill(THECOLORS['black'])
-            self.active_object_list.draw(surface)
-            if self.drawing_block:
-                surface.blit(self.drawing_block.image, self.drawing_block.rect)
-                pygame.draw.rect(surface, THECOLORS['red'], self.drawing_block.rect, 1)
-            self.toolbox.draw(surface)
-            pygame.display.update()
+        self.window.fill(THECOLORS['black'])
+        self.active_object_list.draw(surface)
+        if self.drawing_block:
+            surface.blit(self.drawing_block.image, self.drawing_block.rect)
+            pygame.draw.rect(surface, THECOLORS['red'], self.drawing_block.rect, 1)
+        self.toolbox.draw(surface)
+        pygame.display.update()
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -150,15 +153,14 @@ class TopWindow:
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.last_mouse_pos = pygame.mouse.get_pos()
             self.is_mouse_down = True
-            if self.drawing_block or not self.drawing_block_image_list:
+            if self.drawing_block or not self.selected_tool:
                 return
-            real_scale = self.is_real_scale
-            new_drawing_block = ElasticSpriteFiller(adjusted_mouse_pos, self.drawing_block_image_list, real_scale)
+            new_drawing_block = ElasticSprite(self.selected_tool.copy(), adjusted_mouse_pos)
             collision_list = pygame.sprite.spritecollide(new_drawing_block, self.active_object_list, False)
             if not collision_list and event.button == 1:
                 self.drawing_block = new_drawing_block
             if event.button == 3:
-                new_drawing_block = ElasticSpriteFiller(mouse_pos, self.drawing_block_image_list, real_scale)
+                new_drawing_block = ElasticSprite(self.selected_tool.copy(), mouse_pos)
                 collision_list = pygame.sprite.spritecollide(new_drawing_block, self.active_object_list, False)
                 if collision_list:
                     block = collision_list[0]
@@ -172,8 +174,8 @@ class TopWindow:
             self.drawing_block = None
 
     def on_toolbox_change(self, sprite):
-        self.drawing_block_image_list = sprite.image_list
-        self.is_real_scale = sprite.is_real_scale
+        #if isinstance(sprite, SpriteObject):
+        self.selected_tool = sprite
 
     def adjust_to_grid(self, mouse_pos):
         GRID = 10.0

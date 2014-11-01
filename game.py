@@ -72,7 +72,7 @@ class Level_01(Level):
 
 
 def set_message(text):
-    global message, previous_message
+    global message, previous_   message
     message = font.render(text, True, THECOLORS['black'], THECOLORS['white'])
     previous_message = message
 

@@ -32,8 +32,8 @@ class TopWindow(object):
         self.is_mouse_down = False
         self.is_play_mode = False
         self.quit_requested = False
-
-
+        self.font = pygame.font.SysFont("Times New Roman", 30)
+        self.message = None
 
         for filename in glob('data/blocks/*.png'):
             if "-filler.png" in filename:
@@ -61,30 +61,31 @@ class TopWindow(object):
 
         pygame.quit()
 
-    def run_play_loop(self):
-        collide_object_list = self.active_object_list.copy()
-        collide_object_list.remove(self.selected_object)
+    def set_msg(self, text):
+        self.message = self.font.render(text, True, THECOLORS['black'], THECOLORS['white'])
 
-        player = Player(self.selected_object.image)
-        player.set_position(self.selected_object.position)
-        levels = [Level(self.window.get_size(), self.window, player, collide_object_list)]
-        playloop = PlayLoop(player, levels)
-        playloop.run(self.window)
+    def run_play_loop(self):
+        collide_object_list = pygame.sprite.Group()
+        collect_object_list = pygame.sprite.Group()
+        if self.selected_object:
+            for obj in self.active_object_list:
+                if obj == self.selected_object:  # Do not collide/collect the player
+                    continue
+                if isinstance(obj.sprite, SpriteObject):
+                    if obj.sprite.collectible:
+                        collect_object_list.add(obj)
+                    else:
+                        collide_object_list.add(obj)
+                else:
+                    collide_object_list.add(obj)
+            player = Player(self.selected_object.image)
+            player.position = self.selected_object.position
+            levels = [Level(self.window.get_size(), self.window, player, collide_object_list, collect_object_list)]
+            playloop = PlayLoop(self.window, player, levels)
+            playloop.run()
         self.is_play_mode = False
 
     def draw(self, surface):
-        if self.is_play_mode:
-            self.player_draw(surface)
-        else:
-            self.editor_draw(surface)
-
-
-    def player_draw(self, surface):
-        self.window.fill(THECOLORS['black'])
-        self.active_object_list.draw(surface)
-        pygame.display.update()
-
-    def editor_draw(self, surface):
         self.window.fill(THECOLORS['black'])
         self.active_object_list.draw(surface)
         if self.drawing_object:
@@ -97,6 +98,7 @@ class TopWindow(object):
             pygame.draw.rect(surface, THECOLORS['black'], rect, 1)
         self.toolbox.draw(surface)
         pygame.display.update()
+
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -194,6 +196,7 @@ class TopWindow(object):
             self.is_mouse_down = True
             if self.toolbox.handle_events(event):
                 return
+            self.selected_object = None
 
             collision_list = [s for s in self.active_object_list.sprites() if s.rect.collidepoint(mouse_pos)]
             clicked_object = collision_list[0] if collision_list else None
@@ -214,11 +217,9 @@ class TopWindow(object):
             if self.drawing_object:
                 if self.drawing_object.rect.width > 0 and self.drawing_object.rect.height > 0:
                     self.active_object_list.add(self.drawing_object)
-                    self.selected_object = self.drawing_object
             self.drawing_object = None
 
     def on_toolbox_change(self, sprite):
-        #if isinstance(sprite, SpriteObject):
         self.selected_tool_object = sprite
 
     def adjust_to_grid(self, mouse_pos):
@@ -227,4 +228,4 @@ class TopWindow(object):
         y = mouse_pos[1]
         x = round(x/GRID)*GRID
         y = round(y/GRID)*GRID
-        return (x, y)
+        return x, y

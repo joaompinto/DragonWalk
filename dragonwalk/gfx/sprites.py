@@ -12,12 +12,13 @@ from pygame import Rect
 
 class SpriteObject(pygame.sprite.Sprite):
 
-    def __init__(self, place_rect, image_filename):
+    def __init__(self, place_rect, image_filename, collectible=None):
         super(SpriteObject, self).__init__()
         self.image_filename = image_filename
         self.original_image = pygame.image.load(image_filename).convert_alpha()
         self.rect = place_rect
         self._resize_image()
+        self.collectible = collectible
 
     @property
     def size(self):
@@ -45,7 +46,7 @@ class SpriteObject(pygame.sprite.Sprite):
         self.image = pygame.transform.scale(self.original_image, (self.rect.width, self.rect.height))
 
     def copy(self):
-        return SpriteObject(Rect(self.rect), self.image_filename)
+        return SpriteObject(Rect(self.rect), self.image_filename, self.collectible)
 
 
 class SpriteFiller(pygame.sprite.Sprite):
@@ -92,7 +93,7 @@ class SpriteFiller(pygame.sprite.Sprite):
         self.rect.x, self.rect.y = position
 
     def build_image(self):
-        self.image = pygame.Surface([self.rect.width, self.rect.height], pygame.SRCALPHA,)
+        self.image = pygame.Surface([self.rect.width, self.rect.height], pygame.SRCALPHA)
         offset_y = 0
         current_image = self.top_image
         while offset_y < self.rect.height:
@@ -118,14 +119,27 @@ class ElasticSprite(pygame.sprite.Sprite):
     def __init__(self, sprite, base_position):
         super(ElasticSprite, self).__init__()
         self.sprite = sprite
+        self.sprite.size = 0, 0
         self.base_position = base_position
         self.moving_position = list(base_position)
         self.rect = sprite.rect
         self.image = sprite.image
 
     @property
+    def size(self):
+        return self.sprite.position
+
+    @size.setter
+    def size(self, value):
+        self.sprite.size = value
+
+    @property
     def position(self):
         return self.sprite.position
+
+    @position.setter
+    def position(self, value):
+        self.sprite.size = value
 
     @property
     def moving_x(self):

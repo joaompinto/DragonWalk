@@ -3,19 +3,18 @@ from pygame.color import THECOLORS
 
 class Level(object):
 
-    def __init__(self, size, window, player_object, collide_object_list=pygame.sprite.Group()):
+    def __init__(self, size, window, player_object, collide_object_list=pygame.sprite.Group(), collect_object_list=pygame.sprite.Group()):
         window_width, window_height = window.get_width(), window.get_height()
         self.size = size
         self.window_width, self.window_height = window_width, window_height
-        self.collect_object_list = pygame.sprite.Group()
         self.player_object = player_object
-        self.player_start = self.player_start_x, self.player_start_y = 0, 0
         self.world_shift_x = self.world_shift_y = 0
         self.left_viewbox = window_width/2 - window_width/8
         self.right_viewbox = window_width/2 + window_width/10
         self.up_viewbox = window_height/5
         self.down_viewbox = window_height/2
         self.collide_object_list = collide_object_list
+        self.collect_object_list = collect_object_list
         player_object.level = self
 
     def update(self):
@@ -79,6 +78,5 @@ class Level(object):
 
 
     def clear_collected(self, player):
-        collide_list = pygame.sprite.spritecollide(player, self.collect_object_list, True)
-        if len(collide_list) > 0:
-            blop_sound.play()
+        collection_list = pygame.sprite.spritecollide(self.player_object, self.collect_object_list, True)
+        return len(self.collect_object_list) == 0

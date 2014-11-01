@@ -1,5 +1,6 @@
 import pygame
 from pygame.color import THECOLORS
+from dragonwalk.gfx.sprites import SpriteObject
 
 class ToolBox(object):
 
@@ -21,7 +22,11 @@ class ToolBox(object):
     def draw(self, surface):
         self.toolbox.draw(surface)
         if self.active_tool:
-            pygame.draw.rect(surface, THECOLORS['blue'], self.active_tool.rect, 3)
+            if isinstance(self.active_tool, SpriteObject) and self.active_tool.collectible:
+                pygame.draw.circle(surface, THECOLORS['yellow'], self.active_tool.rect.center, 32, 3)
+            else:
+                pygame.draw.rect(surface, THECOLORS['yellow'], self.active_tool.rect, 3)
+
 
     def handle_events(self, event):
         mouse_pos = event.pos
@@ -29,6 +34,10 @@ class ToolBox(object):
             if sprite.rect.collidepoint(mouse_pos):
                 self.tool_change_callback(sprite)
                 self.active_tool = sprite
+                if isinstance(self.active_tool, SpriteObject):
+                    self.active_tool.collectible = True
+                    if event.button == 3:
+                        self.active_tool.collectible = False
                 return sprite
         return None
 

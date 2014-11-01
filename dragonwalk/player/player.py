@@ -1,5 +1,4 @@
 import pygame
-from pygame.color import THECOLORS
 
 RIGHT = 1
 LEFT = 2
@@ -13,29 +12,34 @@ class Player(pygame.sprite.Sprite):
         self.hspeed = 0
         self.face_direction = RIGHT
         self.vspeed = 0
-        self.level = None
+        self._level = None
 
     @property
     def position(self):
         return self.rect.x, self.rect.y
 
+    @position.setter
+    def position(self, value):
+        self.rect.x, self.rect.y = value
+
     def set_properties(self):
         self.rect = self.image.get_rect()
         self.speed = 5
 
-    def set_position(self, position):
-        self.rect.x, self.rect.y = position
+    @property
+    def level(self):
+        return self._level
 
-    def set_level(self, level):
-        self.level = level
-        self.set_position((level.player_start_x, level.player_start_y))
+    @level.setter
+    def level(self, level):
+        self._level = level
 
-    def set_image(self, filename=None, image=None):
+    def set_image(self, filename=None):
         file_image = pygame.image.load(filename).convert_alpha()
         pygame.transform.scale(file_image, (self.rect.width, self.rect.height), self.image)
         self.set_properties()
 
-    def update(self, collidable = pygame.sprite.Group(), event=None):
+    def update(self, collidable=pygame.sprite.Group(), event=None):
 
         hitting_the_ground_boundary = False
         self.experience_gravity()
@@ -54,7 +58,7 @@ class Player(pygame.sprite.Sprite):
 
         # Check level boundaries
         if self.rect.bottom > self.level.size[1]:
-            self.set_position((self.position[0], self.level.size[1] - self.rect.height))
+            self.position = self.position[0], self.level.size[1] - self.rect.height
             #self.rect.bottom = self.level.size[1]
             if self.vspeed > 0:
                 hitting_the_ground_boundary = True
@@ -100,7 +104,6 @@ class Player(pygame.sprite.Sprite):
             self.vspeed = 1
         else:
             self.vspeed += gravity
-
 
     def draw(self, surface):
         surface.blit(self.image, self.rect)

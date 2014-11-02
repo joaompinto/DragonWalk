@@ -4,9 +4,8 @@ from os.path import exists
 from glob import glob
 from pygame import Rect
 from pygame.color import THECOLORS
-from dragonwalk.gfx.sprites import ElasticSprite, SpriteFiller, SpriteObject
+from dragonwalk.gfx.sprites import ElasticSprite, SpriteFiller, AnimatedSprite
 from dragonwalk.gfx.toolbox import ToolBox
-from dragonwalk.gfx.gameclock import GameClock
 from dragonwalk.player.level import Level
 from dragonwalk.player.player import Player
 from dragonwalk.player.playloop import PlayLoop
@@ -41,18 +40,20 @@ class TopWindow(object):
         self.background = background
 
 
-        for filename in glob('data/blocks/*.png'):
+        for filename in glob('data/blocks/*.png')+glob('data/blocks/*.jpg'):
             if "-filler.png" in filename:
                 continue
             image_list = [filename]
             filler_image = filename.split(".")[0]+"-filler.png"
             if exists(filler_image):
                 image_list.append(filler_image)
-            sprite = SpriteFiller(Rect(0, 0, 64, 64), image_list)
+            sprite = SpriteFiller((0, 0), (60, 60), image_list)
             toolbox.add(sprite)
 
         for filename in glob('data/objects/*.png'):
-            sprite = SpriteObject(Rect(0, 0, 64, 64), filename)
+            if '_' in filename:  # State sritee
+                continue
+            sprite = AnimatedSprite((0, 0), (60, 60), [filename])
             toolbox.add(sprite)
 
     def run_event_loop(self):
@@ -78,14 +79,14 @@ class TopWindow(object):
             for obj in self.active_object_list:
                 if obj == self.selected_object:  # Do not collide/collect the player
                     continue
-                if isinstance(obj.sprite, SpriteObject):
-                    if obj.sprite.collectible:
+                if isinstance(obj, AnimatedSprite):
+                    if obj.collectable:
                         collect_object_list.add(obj)
                     else:
                         collide_object_list.add(obj)
                 else:
                     collide_object_list.add(obj)
-            player = Player(self.selected_object.image)
+            player = Player(self.selected_object)
             player.position = self.selected_object.position
             levels = [Level(self.window.get_size(), self.window, player, collide_object_list, collect_object_list)]
             playloop = PlayLoop(self.window, player, levels)
@@ -97,8 +98,10 @@ class TopWindow(object):
         surface.blit(self.background, (0, 0))
         self.active_object_list.draw(surface)
         if self.drawing_object:
-            surface.blit(self.drawing_object.image, self.drawing_object.rect)
-            pygame.draw.rect(surface, THECOLORS['red'], self.drawing_object.rect, 1)
+            sprite = self.drawing_object.sprite
+            #print "Drawing", sprite.position, sprite.size, sprite.image
+            surface.blit(sprite.image, sprite.position)
+            pygame.draw.rect(surface, THECOLORS['red'], sprite.rect, 1)
         if self.selected_object:
             rect = self.selected_object.rect
             pygame.draw.rect(surface, THECOLORS['green'], rect, 2)
@@ -147,7 +150,7 @@ class TopWindow(object):
         self.drawing_object.moving_x += self.hspeed
 
         delta_x = self.drawing_object.moving_x - self.drawing_object.base_x
-        collision_list = pygame.sprite.spritecollide(self.drawing_object, self.active_object_list, False)
+        collision_list = pygame.sprite.spritecollide(self.drawing_object.sprite, self.active_object_list, False)
         for collided_object in collision_list:
             if delta_x > 0:
                 self.drawing_object.moving_x = collided_object.rect.left
@@ -160,7 +163,7 @@ class TopWindow(object):
         self.drawing_object.moving_y += self.vspeed
 
         delta_y = self.drawing_object.moving_y - self.drawing_object.base_y
-        collision_list = pygame.sprite.spritecollide(self.drawing_object, self.active_object_list, False)
+        collision_list = pygame.sprite.spritecollide(self.drawing_object.sprite, self.active_object_list, False)
         for collided_object in collision_list:
             if delta_y > 0: # Work-around for bug in an undetermined collision condition
                 self.drawing_object.moving_y = collided_object.rect.top
@@ -217,14 +220,15 @@ class TopWindow(object):
                     self.selected_object = clicked_object
             else:
                 if self.selected_tool_object:
-                    new_drawing_object = ElasticSprite(self.selected_tool_object.copy(), adjusted_mouse_pos)
-                    self.drawing_object = new_drawing_object
+                    elastic_drawing_object = ElasticSprite(adjusted_mouse_pos, self.selected_tool_object.copy())
+                    elastic_drawing_object.sprite.collectable = self.selected_tool_object.collectable
+                    self.drawing_object = elastic_drawing_object
 
         if event.type == pygame.MOUSEBUTTONUP:
             self.is_mouse_down = False
             if self.drawing_object:
-                if self.drawing_object.rect.width > 0 and self.drawing_object.rect.height > 0:
-                    self.active_object_list.add(self.drawing_object)
+                if self.drawing_object.sprite.rect.width > 0 and self.drawing_object.sprite.rect.height > 0:
+                    self.active_object_list.add(self.drawing_object.sprite)
             self.drawing_object = None
 
     def on_toolbox_change(self, sprite):

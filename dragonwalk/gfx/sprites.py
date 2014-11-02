@@ -10,89 +10,85 @@ from pygame import Rect
     2) Place the first element at the top, and repeat the second element below; repeats horizontally
 """
 
-class SpriteObject(pygame.sprite.Sprite):
 
-    def __init__(self, place_rect, image_filename, collectible=None):
-        super(SpriteObject, self).__init__()
-        self.image_filename = image_filename
-        self.original_image = pygame.image.load(image_filename).convert_alpha()
-        self.rect = place_rect
-        self._resize_image()
-        self.collectible = collectible
+class ActiveSprite(pygame.sprite.Sprite):
 
-    @property
-    def size(self):
-        return self.rect.width, self.rect.height
-
-    @size.setter
-    def size(self, size):
-        self.rect.width, self.rect.height = size
-        self._resize_image()
+    def __init__(self, position, size):
+        super(ActiveSprite, self).__init__()
+        self.rect = Rect(position, size)
+        self.image = None
 
     @property
     def position(self):
         return self.rect.x, self.rect.y
 
     @position.setter
-    def position(self, position):
-        self.rect.x,  self.rect.y = position
+    def position(self, value):
+        self.rect.x, self.rect.y = value
 
-    def _resize_image(self):
+    @property
+    def size(self):
+        return self.rect.size
 
+    @size.setter
+    def size(self, value):
+        self.rect.size = value
+        self.on_resize()
+
+    def on_resize(self):
+        pass
+
+class AnimatedSprite(ActiveSprite):
+
+    def __init__(self, position, size, image_filename_list):
+        super(AnimatedSprite, self).__init__(position, size)
+        self.original_images = []
+        for filename in image_filename_list:
+            self.original_images.append(pygame.image.load(filename).convert_alpha())
+        self.current_image_pos = 0
+        self.image = self.original_images[self.current_image_pos]
+        self._image_filename_list = image_filename_list
+        self.position = position
+        self.size = size
+
+    def on_resize(self):
+        super(AnimatedSprite, self).on_resize()
+        original_image = self.original_images[self.current_image_pos]
         # Limit on the image original size
-        self.rect.width = min(self.rect.width, self.original_image.get_rect().width)
-        self.rect.height = min(self.rect.height, self.original_image.get_rect().height)
-
-        self.image = pygame.transform.smoothscale(self.original_image, (self.rect.width, self.rect.height))
+        new_width = min(self.rect.width, original_image.get_width())
+        new_height = min(self.rect.height,  original_image.get_height())
+        self._size = new_width, new_height
+        self.image = pygame.transform.smoothscale(original_image, (self.rect.width, self.rect.height))
 
     def copy(self):
-        return SpriteObject(Rect(self.rect), self.image_filename, self.collectible)
+        return AnimatedSprite(self.position, self.size, self._image_filename_list)
 
 
-class SpriteFiller(pygame.sprite.Sprite):
+class SpriteFiller(ActiveSprite):
 
-    def __init__(self, rect, image_list):
-        super(SpriteFiller, self).__init__()
+    def __init__(self, position, size, image_filename_list, unit_size=(60, 60)):
+        super(SpriteFiller, self).__init__(position, size)
+
+        self._image_filename_list = image_filename_list
+        self.unit_size = unit_size
 
         # Set top and filler images
-        self._image_list = image_list
-        self.rect = rect
-        self.top_image = pygame.image.load(image_list[0]).convert_alpha()
-        self.top_image = pygame.transform.smoothscale(self.top_image, (64, 64))
-        if len(image_list) > 1:
-            filler_image = pygame.image.load(image_list[1]).convert_alpha()
-            self.filler_image = pygame.transform.smoothscale(filler_image, (64, 64))
+        self.top_image = pygame.image.load(image_filename_list[0]).convert_alpha()
+        self.top_image = pygame.transform.smoothscale(self.top_image, unit_size)
+        if len(image_filename_list) > 1:
+            filler_image = pygame.image.load(image_filename_list[1]).convert_alpha()
+            self.filler_image = pygame.transform.smoothscale(filler_image, unit_size)
         else:
             self.filler_image = self.top_image
-
-        self.build_image()
-
-    @property
-    def image_list(self):
-        return self._image_list
+        self.position = position
+        self.size = size
 
     @property
-    def size(self):
-        return self.rect.width, self.rect.height
+    def image_filename_list(self):
+        return self._image_filename_list
 
-    @size.setter
-    def size(self, size):
-        width, height = size
-        # Avoid costly image rebuild if there are no changes
-        if self.rect.width != width or self.rect.height != height:
-            self.rect.width = width
-            self.rect.height = height
-            self.build_image()
-
-    @property
-    def position(self):
-        return self.rect.x, self.rect.y
-
-    @position.setter
-    def position(self, position):
-        self.rect.x, self.rect.y = position
-
-    def build_image(self):
+    def on_resize(self):
+        super(SpriteFiller, self).on_resize()
         self.image = pygame.Surface([self.rect.width, self.rect.height], pygame.SRCALPHA)
         offset_y = 0
         current_image = self.top_image
@@ -105,41 +101,19 @@ class SpriteFiller(pygame.sprite.Sprite):
             current_image = self.filler_image
 
     def copy(self):
-        return SpriteFiller(Rect(self.rect), self._image_list)
+        return SpriteFiller(self.position, self.size, self._image_filename_list)
 
 
-class ElasticSprite(pygame.sprite.Sprite):
+class ElasticSprite(object):
     """
     ElasticSprite extends a sprite with a base point set during init, and a moving point that can be adjusted.
     The sprite position and size will be adjusted based on the sprite moving point.
     This is mainly useful for mouse drag based drawing
-
-    Using composition over inheritance for now -- João Pinto
     """
-    def __init__(self, sprite, base_position):
-        super(ElasticSprite, self).__init__()
-        self.sprite = sprite
-        self.sprite.size = 0, 0
+    def __init__(self, base_position, sprite):
         self.base_position = base_position
         self.moving_position = list(base_position)
-        self.rect = sprite.rect
-        self.image = sprite.image
-
-    @property
-    def size(self):
-        return self.sprite.position
-
-    @size.setter
-    def size(self, value):
-        self.sprite.size = value
-
-    @property
-    def position(self):
-        return self.sprite.position
-
-    @position.setter
-    def position(self, value):
-        self.sprite.size = value
+        self.sprite = sprite
 
     @property
     def moving_x(self):
@@ -167,7 +141,6 @@ class ElasticSprite(pygame.sprite.Sprite):
         self.moving_position[1] = value
         self.adjust()
 
-
     def adjust(self):
         """
         Adjust the position and size based on the base_pos / moving_pos vertices
@@ -175,10 +148,8 @@ class ElasticSprite(pygame.sprite.Sprite):
         block_delta_x = self.moving_position[0] - self.base_position[0]
         block_delta_y = self.moving_position[1] - self.base_position[1]
         width, height = abs(block_delta_x), abs(block_delta_y)
-        draw_x = self.moving_position[0] if block_delta_x < 0 else self.base_position[0]
-        draw_y = self.moving_position[1] if block_delta_y < 0 else self.base_position[1]
-        self.sprite.position = draw_x, draw_y
+        new_x = self.moving_position[0] if block_delta_x < 0 else self.base_position[0]
+        new_y = self.moving_position[1] if block_delta_y < 0 else self.base_position[1]
+        self.sprite.position = new_x, new_y
         self.sprite.size = width, height
-        self.rect = self.sprite.rect
-        self.image = self.sprite.image
 

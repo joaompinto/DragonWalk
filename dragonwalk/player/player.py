@@ -1,13 +1,14 @@
 import pygame
+from dragonwalk.gfx.sprites import AnimatedSprite
 
 RIGHT = 1
 LEFT = 2
 
 class Player(pygame.sprite.Sprite):
 
-    def __init__(self, image):
+    def __init__(self, sprite):
         super(Player, self).__init__()
-        self.image = image
+        self.image = sprite.image
         self.set_properties()
         self.hspeed = 0
         self.face_direction = RIGHT

@@ -1,10 +1,7 @@
-RootOfTheNull_pygame_tutorial
+DragonWalk is platform game editing and playing engine  
 =============================
 
-Code based on the RootOfTheNull's pygame tutorial:
-[Python pygame Module Tutorials ](https://www.youtube.com/playlist?list=PL1H1sBF1VAKXh0GR1O94UUguIxkCP3dHM)
-
-Watching the entire tutorial is strongly recommended.
-
-Assets from:
-http://www.ironstarmedia.co.uk/2010/01/free-game-assets-09-generic-platform-game-tiles/
+To test it with:
+    
+    ./editor.py levels/simple.xml
+    Then press ESC to get into play mode

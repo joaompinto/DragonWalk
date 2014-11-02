@@ -231,7 +231,6 @@ class TopWindow(object):
             clicked_object = collision_list[0] if collision_list else None
             if clicked_object:
                 if event.button == 3:
-                    print self.active_object_list
                     if clicked_object == self.selected_object:
                         self.selected_object = None
                     if clicked_object == self.player_object:
@@ -300,7 +299,6 @@ class TopWindow(object):
         player = xmldoc.getElementsByTagName('player')
 
         if player:
-            print "loaded player"
             player_info = player[0]
             position = [int(i) for i in player_info.attributes['position'].value.split(',')]
             size = [int(i) for i in player_info.attributes['size'].value.split(',')]

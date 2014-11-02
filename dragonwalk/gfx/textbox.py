@@ -20,15 +20,15 @@ class TextBox(object):
         self._text = value
         self.update()
 
-    def set_text(self, text):
-        self.text = text
 
     def update(self):
-        message = self.font.render(self._text, True, THECOLORS['white'])
+        message = self.font.render(self._text, True, THECOLORS['white'], THECOLORS['black'])
         message.fill((255, 255, 255, self.alpha), None, pygame.BLEND_RGBA_MULT)
         self.surface = message
 
     def draw(self, surface):
+        if not self._text:
+            return
         x, y = self.position
         if self.centered:
             x = surface.get_width()/2 - self.surface.get_rect().width/2

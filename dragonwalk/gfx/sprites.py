@@ -45,7 +45,6 @@ class AnimableSprite(ActiveSprite):
 
     def __init__(self, position, size, image_filename_list):
         super(AnimableSprite, self).__init__(position, size)
-        print "Creating Animbale", position, size
         self.original_images = []
         for filename in image_filename_list:
             self.original_images.append(pygame.image.load(filename).convert_alpha())

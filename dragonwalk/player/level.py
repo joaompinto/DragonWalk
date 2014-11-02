@@ -82,5 +82,7 @@ class Level(object):
 
 
     def clear_collected(self, player):
-        collection_list = pygame.sprite.spritecollide(self.player_object, self.collect_object_list, True)
+        collection_list = pygame.sprite.spritecollide(self.player_object, self.collect_object_list, False)
+        for obj in collection_list:
+            self.collect_object_list.remove(obj)
         return len(self.collect_object_list) == 0

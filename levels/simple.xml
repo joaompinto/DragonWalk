@@ -1,0 +1,15 @@
+<level size="1200,1000">
+  <background filename="data/backgrounds/sky1.png"></background>
+  <player position="10,870" image_list="data/objects/Smok.png,data/objects/Smok_walking.png" size="60,60"></player>
+  <map>
+    <spritefiller position="450,750" image_list="data/blocks/Bricks.jpg" size="120,50"></spritefiller>
+    <animablesprite position="290,750" image_list="data/objects/Songbird-egg.png" is_collectable="True" size="60,60"></animablesprite>
+    <spritefiller position="950,720" image_list="data/blocks/Bricks.jpg" size="140,40"></spritefiller>
+    <animablesprite position="460,870" image_list="data/objects/Songbird-egg.png" is_collectable="True" size="60,60"></animablesprite>
+    <spritefiller position="800,830" image_list="data/blocks/Bricks.jpg" size="180,40"></spritefiller>
+    <spritefiller position="170,810" image_list="data/blocks/Bricks.jpg" size="180,50"></spritefiller>
+    <spritefiller position="0,930" image_list="data/blocks/Bricks.jpg" size="1200,70"></spritefiller>
+    <spritefiller position="350,750" image_list="data/blocks/Bricks.jpg" size="100,180"></spritefiller>
+    <animablesprite position="1040,660" image_list="data/objects/Songbird-egg.png" is_collectable="True" size="60,60"></animablesprite>
+  </map>
+</level>

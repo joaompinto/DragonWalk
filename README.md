@@ -1,4 +1,4 @@
-DragonWalk is platform game editing and playing engine  
+DragonWalk is a platform game editing and playing engine  
 =============================
 
 To test it with:

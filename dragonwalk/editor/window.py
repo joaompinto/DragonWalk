@@ -160,6 +160,7 @@ class TopWindow(object):
         return True
 
     def move_unless_colliding(self):
+
         mouse_x, mouse_y = self.adjust_to_grid(pygame.mouse.get_pos())
 
         colliding_right = colliding_left = colliding_down = colliding_up = False
@@ -183,12 +184,28 @@ class TopWindow(object):
         delta_y = self.drawing_object.moving_y - self.drawing_object.base_y
         collision_list = pygame.sprite.spritecollide(self.drawing_object.sprite, self.active_object_list, False)
         for collided_object in collision_list:
-            if delta_y > 0: # Work-around for bug in an undetermined collision condition
+            if delta_y > 0:  # Work-around for bug in an undetermined collision condition
                 self.drawing_object.moving_y = collided_object.rect.top
                 colliding_down = True
             if delta_y < 0:
                 self.drawing_object.moving_y = collided_object.rect.bottom
                 colliding_up = True
+
+        # Adjust based on ratio
+        if isinstance(self.drawing_object.sprite, AnimableSprite):
+            if self.drawing_object.sprite.size[0] > self.drawing_object.sprite.size[1]:
+                ratio_w = self.drawing_object.sprite.size[1] / self.drawing_object.sprite.ratio
+                if delta_x > 0:
+                    self.drawing_object.moving_x = self.drawing_object.base_x + ratio_w
+                else:
+                    self.drawing_object.moving_x = self.drawing_object.base_x - ratio_w
+            else:
+                ratio_h = self.drawing_object.sprite.size[0] * self.drawing_object.sprite.ratio
+                if delta_y > 0:
+                    self.drawing_object.moving_y = self.drawing_object.base_y + ratio_h
+                else:
+                    self.drawing_object.moving_y = self.drawing_object.base_y - ratio_h
+
 
         # If colliding only move in the collision opposite direction
         change = mouse_x - self.drawing_object.moving_x
@@ -219,6 +236,7 @@ class TopWindow(object):
         if event.type == pygame.MOUSEMOTION:
             if self.is_mouse_down:
                 if self.drawing_object:
+
                     self.move_unless_colliding()
 
         if event.type == pygame.MOUSEBUTTONDOWN:

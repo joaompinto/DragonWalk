@@ -3,15 +3,11 @@
 import pygame
 from pygame import Rect
 
-"""
-    The SpriteFiller will fill a rectangle by repeating images from an input list
-    The image list can have the following number of elements:
-    1) Repeat vertically and horizontally
-    2) Place the first element at the top, and repeat the second element below; repeats horizontally
-"""
-
-
 class ActiveSprite(pygame.sprite.Sprite):
+    """
+    An active sprite extends the sprite with the size and position properties.
+    Changing an object size will trigger it's on_size method
+    """
 
     def __init__(self, position, size):
         super(ActiveSprite, self).__init__()
@@ -42,12 +38,14 @@ class ActiveSprite(pygame.sprite.Sprite):
         pass
 
 class AnimableSprite(ActiveSprite):
-
+    """ An AnimableSprite can use multiple images  """
     def __init__(self, position, size, image_filename_list):
         super(AnimableSprite, self).__init__(position, size)
         self.original_images = []
         for filename in image_filename_list:
-            self.original_images.append(pygame.image.load(filename).convert_alpha())
+            original_file = pygame.image.load(filename).convert_alpha()
+            self.original_images.append(original_file)
+        self.ratio = float(original_file.get_width()) / original_file.get_height()
         self._selected_image_pos = 0
         self._image_filename_list = image_filename_list
         self.position = position
@@ -57,10 +55,12 @@ class AnimableSprite(ActiveSprite):
     def on_resize(self):
         super(AnimableSprite, self).on_resize()
         original_image = self.original_images[self._selected_image_pos]
-        # Limit on the image original size
-        new_width = min(self.rect.width, original_image.get_width())
-        new_height = min(self.rect.height,  original_image.get_height())
-        self._size = new_width, new_height
+
+
+
+        new_width, new_height = self.rect.size
+        #new_width = min(self.rect.width, original_image.get_width())
+        #new_height = min(self.rect.height,  original_image.get_height())
         self.image = pygame.transform.smoothscale(original_image, (self.rect.width, self.rect.height))
 
     def copy(self):
@@ -89,7 +89,14 @@ class AnimableSprite(ActiveSprite):
             self.original_images[i] = pygame.transform.flip(self.original_images[i], xbool, ybool)
         self.on_resize()
 
+
 class SpriteFiller(ActiveSprite):
+    """
+        The SpriteFiller will fill a rectangle by repeating images from an input list
+        The image list can have the following number of elements:
+        1) Repeat vertically and horizontally
+        2) Place the first element at the top, and repeat the second element below; repeats horizontally
+    """
 
     def __init__(self, position, size, image_filename_list, unit_size=(60, 60)):
         super(SpriteFiller, self).__init__(position, size)

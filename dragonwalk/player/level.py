@@ -1,5 +1,4 @@
 import pygame
-from pygame.color import THECOLORS
 
 class Level(object):
 
@@ -17,12 +16,17 @@ class Level(object):
         self.collect_object_list = collect_object_list
         player_object.level = self
 
+        background = pygame.Surface(window.get_size())
+        file_image = pygame.image.load('data/backgrounds/sky1.png').convert()
+        pygame.transform.smoothscale(file_image, (background.get_width(), background.get_height()), background)
+        self.background = background
+
     def update(self):
         self.collide_object_list.update()
         self.collect_object_list.update()
 
     def draw(self, window):
-        window.fill(THECOLORS['black'])
+        window.blit(self.background, (0, 0))
         self.collide_object_list.draw(window)
         self.collect_object_list.draw(window)
 

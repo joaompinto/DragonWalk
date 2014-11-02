@@ -43,7 +43,7 @@ class SpriteObject(pygame.sprite.Sprite):
         self.rect.width = min(self.rect.width, self.original_image.get_rect().width)
         self.rect.height = min(self.rect.height, self.original_image.get_rect().height)
 
-        self.image = pygame.transform.scale(self.original_image, (self.rect.width, self.rect.height))
+        self.image = pygame.transform.smoothscale(self.original_image, (self.rect.width, self.rect.height))
 
     def copy(self):
         return SpriteObject(Rect(self.rect), self.image_filename, self.collectible)
@@ -58,10 +58,10 @@ class SpriteFiller(pygame.sprite.Sprite):
         self._image_list = image_list
         self.rect = rect
         self.top_image = pygame.image.load(image_list[0]).convert_alpha()
-        self.top_image = pygame.transform.scale(self.top_image, (64, 64))
+        self.top_image = pygame.transform.smoothscale(self.top_image, (64, 64))
         if len(image_list) > 1:
             filler_image = pygame.image.load(image_list[1]).convert_alpha()
-            self.filler_image = pygame.transform.scale(filler_image, (64, 64))
+            self.filler_image = pygame.transform.smoothscale(filler_image, (64, 64))
         else:
             self.filler_image = self.top_image
 

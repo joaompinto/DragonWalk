@@ -6,6 +6,7 @@ from pygame import Rect
 from pygame.color import THECOLORS
 from dragonwalk.gfx.sprites import ElasticSprite, SpriteFiller, SpriteObject
 from dragonwalk.gfx.toolbox import ToolBox
+from dragonwalk.gfx.gameclock import GameClock
 from dragonwalk.player.level import Level
 from dragonwalk.player.player import Player
 from dragonwalk.player.playloop import PlayLoop
@@ -34,6 +35,11 @@ class TopWindow(object):
         self.quit_requested = False
         self.font = pygame.font.SysFont("Times New Roman", 30)
         self.message = None
+        background = pygame.Surface(self.window.get_size())
+        file_image = pygame.image.load('data/backgrounds/sky1.png').convert()
+        pygame.transform.smoothscale(file_image, (background.get_width(), background.get_height()), background)
+        self.background = background
+
 
         for filename in glob('data/blocks/*.png'):
             if "-filler.png" in filename:
@@ -55,6 +61,7 @@ class TopWindow(object):
             if self.is_play_mode:
                 self.run_play_loop()
             else:
+
                 while self.handle_events():
                     self.draw(self.window)
                     self.clock.tick(self.frames_per_second)
@@ -86,7 +93,8 @@ class TopWindow(object):
         self.is_play_mode = False
 
     def draw(self, surface):
-        self.window.fill(THECOLORS['black'])
+        #self.window.fill(pygame.Color(200, 200, 200))
+        surface.blit(self.background, (0, 0))
         self.active_object_list.draw(surface)
         if self.drawing_object:
             surface.blit(self.drawing_object.image, self.drawing_object.rect)

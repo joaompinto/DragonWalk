@@ -36,7 +36,7 @@ class Player(pygame.sprite.Sprite):
 
     def set_image(self, filename=None):
         file_image = pygame.image.load(filename).convert_alpha()
-        pygame.transform.scale(file_image, (self.rect.width, self.rect.height), self.image)
+        pygame.transform.smoothscale(file_image, (self.rect.width, self.rect.height), self.image)
         self.set_properties()
 
     def update(self, collidable=pygame.sprite.Group(), event=None):

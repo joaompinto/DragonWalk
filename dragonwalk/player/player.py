@@ -1,31 +1,31 @@
 import pygame
-from dragonwalk.gfx.sprites import AnimatedSprite
+from dragonwalk.gfx.sprites import AnimableSprite
 
 RIGHT = 1
 LEFT = 2
 
 class Player(pygame.sprite.Sprite):
 
-    def __init__(self, sprite):
+    def __init__(self, sprite, walk_step_points=50):
         super(Player, self).__init__()
         self.image = sprite.image
-        self.set_properties()
         self.hspeed = 0
+        self.speed = 5
+        self.rect = sprite.rect
         self.face_direction = RIGHT
         self.vspeed = 0
         self._level = None
+        self.sprite = sprite
+        self.walk_step = 0
+        self.walk_step_points = walk_step_points
 
     @property
     def position(self):
-        return self.rect.x, self.rect.y
+        return self.sprite.rect.x, self.sprite.rect.y
 
     @position.setter
     def position(self, value):
-        self.rect.x, self.rect.y = value
-
-    def set_properties(self):
-        self.rect = self.image.get_rect()
-        self.speed = 5
+        self.sprite.rect.x, self.sprite.rect.y = value
 
     @property
     def level(self):
@@ -34,11 +34,6 @@ class Player(pygame.sprite.Sprite):
     @level.setter
     def level(self, level):
         self._level = level
-
-    def set_image(self, filename=None):
-        file_image = pygame.image.load(filename).convert_alpha()
-        pygame.transform.smoothscale(file_image, (self.rect.width, self.rect.height), self.image)
-        self.set_properties()
 
     def update(self, collidable=pygame.sprite.Group(), event=None):
 
@@ -93,12 +88,22 @@ class Player(pygame.sprite.Sprite):
                     if self.hspeed > 0:
                         self.hspeed = 0
 
+        if self.sprite.images_count > 1:
+            if self.hspeed == 0:
+                self.sprite.selected_image_pos = 0
+            else:
+                if self.position[0] % self.walk_step_points == 0:
+                    self.walk_step += 1
+                    self.walk_step %= self.sprite.images_count
+                self.sprite.selected_image_pos = self.walk_step
+
         if self.face_direction == RIGHT and self.hspeed < 0:
-            self.image = pygame.transform.flip(self.image, True, False)
+            self.sprite.flip(True, False)
             self.face_direction = LEFT
         if self.face_direction == LEFT and self.hspeed > 0:
-            self.image = pygame.transform.flip(self.image, True, False)
+            self.sprite.flip(True, False)
             self.face_direction = RIGHT
+
 
     def experience_gravity(self, gravity=.35):
         if self.vspeed == 0:  # Keep applying gravity
@@ -107,4 +112,4 @@ class Player(pygame.sprite.Sprite):
             self.vspeed += gravity
 
     def draw(self, surface):
-        surface.blit(self.image, self.rect)
+        surface.blit(self.sprite.image, self.rect)

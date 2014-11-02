@@ -4,27 +4,26 @@ from os.path import exists
 from glob import glob
 from pygame import Rect
 from pygame.color import THECOLORS
-from dragonwalk.gfx.sprites import ElasticSprite, SpriteFiller, AnimatedSprite
-from dragonwalk.gfx.toolbox import ToolBox
-from dragonwalk.player.level import Level
-from dragonwalk.player.player import Player
-from dragonwalk.player.playloop import PlayLoop
-
+from dragonwalk.gfx import ElasticSprite, SpriteFiller, AnimableSprite, ToolBox
+from dragonwalk.player import Player, Level, PlayLoop
+from dragonwalk.yattag import Doc, indent
+from xml.dom import minidom
 
 
 class TopWindow(object):
 
-    def __init__(self):
+    def __init__(self, level_filename):
 
         environ['SDL_VIDEO_CENTERED'] = '1'
         pygame.init()
-        size = 1200, 1000
+        self.size = size = 1200, 1000
         self.frames_per_second = 60
         self.window = pygame.display.set_mode(size)
         self.clock = pygame.time.Clock()
         self.toolbox = toolbox = ToolBox(self.on_toolbox_change, (0, 0), (64, 64))
         self.active_object_list = pygame.sprite.Group()
         self.selected_tool_object = None   # Object selected at the toolbox
+        self.player_object = None
         self.drawing_object = None  # Object currently being drawn
         self.selected_object = None
         self.hspeed = 0
@@ -34,11 +33,10 @@ class TopWindow(object):
         self.quit_requested = False
         self.font = pygame.font.SysFont("Times New Roman", 30)
         self.message = None
-        background = pygame.Surface(self.window.get_size())
-        file_image = pygame.image.load('data/backgrounds/sky1.png').convert()
-        pygame.transform.smoothscale(file_image, (background.get_width(), background.get_height()), background)
-        self.background = background
+        self.level_filename = level_filename
+        self.background = None
 
+        self.set_background('data/backgrounds/sky1.png')
 
         for filename in glob('data/blocks/*.png')+glob('data/blocks/*.jpg'):
             if "-filler.png" in filename:
@@ -51,10 +49,21 @@ class TopWindow(object):
             toolbox.add(sprite)
 
         for filename in glob('data/objects/*.png'):
-            if '_' in filename:  # State sritee
+            if '_' in filename:  # State sprite
                 continue
-            sprite = AnimatedSprite((0, 0), (60, 60), [filename])
+            file_name_list = [filename]
+            base, ext = filename.split('.')
+            walking_file = base+ '_walking.'+ext
+            if exists(walking_file):
+                file_name_list.append(walking_file)
+            sprite = AnimableSprite((0, 0), (60, 60), file_name_list)
             toolbox.add(sprite)
+
+    def set_background(self, filename):
+        background = pygame.Surface(self.window.get_size())
+        file_image = pygame.image.load(filename).convert()
+        pygame.transform.smoothscale(file_image, (background.get_width(), background.get_height()), background)
+        self.background = background
 
     def run_event_loop(self):
 
@@ -73,25 +82,26 @@ class TopWindow(object):
         self.message = self.font.render(text, True, THECOLORS['black'], THECOLORS['white'])
 
     def run_play_loop(self):
+        self.is_play_mode = False
+        if not self.player_object:
+            return
         collide_object_list = pygame.sprite.Group()
         collect_object_list = pygame.sprite.Group()
-        if self.selected_object:
-            for obj in self.active_object_list:
-                if obj == self.selected_object:  # Do not collide/collect the player
-                    continue
-                if isinstance(obj, AnimatedSprite):
-                    if obj.collectable:
-                        collect_object_list.add(obj)
-                    else:
-                        collide_object_list.add(obj)
+        for obj in self.active_object_list:
+            if obj == self.player_object:  # Do not collide/collect the player
+                continue
+            if isinstance(obj, AnimableSprite):
+                if obj.collectable:
+                    collect_object_list.add(obj)
                 else:
                     collide_object_list.add(obj)
-            player = Player(self.selected_object)
-            player.position = self.selected_object.position
-            levels = [Level(self.window.get_size(), self.window, player, collide_object_list, collect_object_list)]
-            playloop = PlayLoop(self.window, player, levels)
-            playloop.run()
-        self.is_play_mode = False
+            else:
+                collide_object_list.add(obj)
+        player = Player(self.player_object.copy())
+        player.position = self.player_object.position
+        levels = [Level(self.window.get_size(), self.window, player, collide_object_list, collect_object_list)]
+        playloop = PlayLoop(self.window, player, levels)
+        playloop.run()
 
     def draw(self, surface):
         #self.window.fill(pygame.Color(200, 200, 200))
@@ -107,6 +117,13 @@ class TopWindow(object):
             pygame.draw.rect(surface, THECOLORS['green'], rect, 2)
             rect = Rect(rect.x+1, rect.y+1, rect.width-1, rect.height-1)
             pygame.draw.rect(surface, THECOLORS['black'], rect, 1)
+        if self.player_object:
+            rect = self.player_object.rect
+            max_r = 10
+            #max_r = min(rect.width, rect.height)/2
+            pygame.draw.circle(surface, THECOLORS['white'], rect.center, max_r, 2)
+            pygame.draw.circle(surface, THECOLORS['white'], rect.center, max_r-5, 2)
+
         self.toolbox.draw(surface)
         pygame.display.update()
 
@@ -121,24 +138,25 @@ class TopWindow(object):
             self.handle_mouse_events(event)
         return True
 
-
     def handle_key_events(self, event):
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
-                self.quit_requested = True
+                self.is_play_mode = True
                 return False
 
-            if event.key == pygame.K_RETURN:
-                for platform in self.active_object_list:
-                    print "["+",".join([`platform.rect.x`, `platform.rect.y`,
-                                        `platform.rect.width`, `platform.rect.height`])+", grass],"
+            if event.key == pygame.K_s:
+                self.save()
+
             if event.key in [pygame.K_BACKSPACE, pygame.K_DELETE]:
                 if self.selected_object:
                     self.active_object_list.remove(self.selected_object)
                     self.selected_object = None
-            if event.key == pygame.K_p:
-                self.is_play_mode = True
-                return False
+                    if self.selected_object == self.player_object:
+                        self.player_object = None
+
+            if event.key == pygame.K_SPACE and self.selected_object:
+                self.player_object = self.selected_object
+
         return True
 
     def move_unless_colliding(self):
@@ -213,21 +231,24 @@ class TopWindow(object):
             clicked_object = collision_list[0] if collision_list else None
             if clicked_object:
                 if event.button == 3:
-                    if self.selected_object == clicked_object:
+                    print self.active_object_list
+                    if clicked_object == self.selected_object:
                         self.selected_object = None
+                    if clicked_object == self.player_object:
+                        self.player_object = None
                     self.active_object_list.remove(clicked_object)
                 else:
                     self.selected_object = clicked_object
             else:
                 if self.selected_tool_object:
                     elastic_drawing_object = ElasticSprite(adjusted_mouse_pos, self.selected_tool_object.copy())
-                    elastic_drawing_object.sprite.collectable = self.selected_tool_object.collectable
                     self.drawing_object = elastic_drawing_object
 
         if event.type == pygame.MOUSEBUTTONUP:
             self.is_mouse_down = False
             if self.drawing_object:
                 if self.drawing_object.sprite.rect.width > 0 and self.drawing_object.sprite.rect.height > 0:
+                    self.drawing_object.sprite.collectable = self.selected_tool_object.collectable
                     self.active_object_list.add(self.drawing_object.sprite)
             self.drawing_object = None
 
@@ -241,3 +262,67 @@ class TopWindow(object):
         x = round(x/GRID)*GRID
         y = round(y/GRID)*GRID
         return x, y
+
+    def save(self):
+        background_file_name = 'data/backgrounds/sky1.png'
+        doc, tag, text = Doc().tagtext()
+        with tag('level', size=','.join([str(x) for x in self.size])):
+            with tag('background', filename=background_file_name): pass
+            if self.player_object:
+                with tag('player', position=','.join([str(x) for x in self.player_object.position])
+                     , size=','.join([str(x) for x in self.player_object.size])
+                    , image_list=','.join(self.player_object.image_filename_list)):
+                    pass
+            with tag('map'):
+                for obj in self.active_object_list:
+                    if obj == self.player_object:
+                        continue
+                    if isinstance(obj, SpriteFiller):
+                        with tag('spritefiller', position=','.join([str(x) for x in obj.position])
+                            , size=','.join([str(x) for x in obj.size])
+                            , image_list=','.join(obj.image_filename_list)):
+                            pass
+                    if isinstance(obj, AnimableSprite):
+                        with tag('animablesprite', position=','.join([str(x) for x in obj.position])
+                            , size=','.join([str(x) for x in obj.size])
+                            , image_list=','.join(obj.image_filename_list)
+                            , is_collectable=str(obj.collectable)):
+                            pass
+
+        with open(self.level_filename, 'w') as save_file:
+            save_file.write(indent(doc.getvalue()))
+
+    def load(self):
+        xmldoc = minidom.parse(self.level_filename)
+        background = xmldoc.getElementsByTagName('background')[0]
+        background_filename = background.attributes['filename'].value
+        self.set_background(background_filename)
+        player = xmldoc.getElementsByTagName('player')
+
+        if player:
+            print "loaded player"
+            player_info = player[0]
+            position = [int(i) for i in player_info.attributes['position'].value.split(',')]
+            size = [int(i) for i in player_info.attributes['size'].value.split(',')]
+            image_list = player_info.attributes['image_list'].value.split(',')
+            sprite = AnimableSprite(position, size,  image_list)
+            self.active_object_list.add(sprite)
+            self.player_object = sprite
+
+        for sprite_info in xmldoc.getElementsByTagName('spritefiller'):
+            position = [int(i) for i in sprite_info.attributes['position'].value.split(',')]
+            size = [int(i) for i in sprite_info.attributes['size'].value.split(',')]
+            image_list = sprite_info.attributes['image_list'].value.split(',')
+            sprite = SpriteFiller(position, size, image_list)
+            self.active_object_list.add(sprite)
+
+        for sprite_info in xmldoc.getElementsByTagName('animablesprite'):
+            position = [int(i) for i in sprite_info.attributes['position'].value.split(',')]
+            size = [int(i) for i in sprite_info.attributes['size'].value.split(',')]
+            image_list = sprite_info.attributes['image_list'].value.split(',')
+            sprite = AnimableSprite(position, size,  image_list)
+            sprite.collectable = (sprite_info.attributes['is_collectable'].value == 'True')
+            self.active_object_list.add(sprite)
+
+
+

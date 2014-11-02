@@ -17,6 +17,7 @@ class ActiveSprite(pygame.sprite.Sprite):
         super(ActiveSprite, self).__init__()
         self.rect = Rect(position, size)
         self.image = None
+        self._resize_count = 0
 
     @property
     def position(self):
@@ -32,28 +33,31 @@ class ActiveSprite(pygame.sprite.Sprite):
 
     @size.setter
     def size(self, value):
-        self.rect.size = value
-        self.on_resize()
+        if self._resize_count == 0 or self.rect.size != value:  # Avoid costly resizes
+            self.rect.size = value
+            self.on_resize()
+        self._resize_count += 1
 
     def on_resize(self):
         pass
 
-class AnimatedSprite(ActiveSprite):
+class AnimableSprite(ActiveSprite):
 
     def __init__(self, position, size, image_filename_list):
-        super(AnimatedSprite, self).__init__(position, size)
+        super(AnimableSprite, self).__init__(position, size)
+        print "Creating Animbale", position, size
         self.original_images = []
         for filename in image_filename_list:
             self.original_images.append(pygame.image.load(filename).convert_alpha())
-        self.current_image_pos = 0
-        self.image = self.original_images[self.current_image_pos]
+        self._selected_image_pos = 0
         self._image_filename_list = image_filename_list
         self.position = position
         self.size = size
+        self.on_resize()
 
     def on_resize(self):
-        super(AnimatedSprite, self).on_resize()
-        original_image = self.original_images[self.current_image_pos]
+        super(AnimableSprite, self).on_resize()
+        original_image = self.original_images[self._selected_image_pos]
         # Limit on the image original size
         new_width = min(self.rect.width, original_image.get_width())
         new_height = min(self.rect.height,  original_image.get_height())
@@ -61,8 +65,30 @@ class AnimatedSprite(ActiveSprite):
         self.image = pygame.transform.smoothscale(original_image, (self.rect.width, self.rect.height))
 
     def copy(self):
-        return AnimatedSprite(self.position, self.size, self._image_filename_list)
+        return AnimableSprite(self.position, self.size, self._image_filename_list)
 
+    @property
+    def selected_image_pos(self):
+        return self._selected_image_pos
+
+    @selected_image_pos.setter
+    def selected_image_pos(self, value):
+        if self._selected_image_pos != value:
+            self._selected_image_pos = value
+            self.on_resize()
+
+    @property
+    def images_count(self):
+        return len(self.original_images)
+
+    @property
+    def image_filename_list(self):
+        return self._image_filename_list
+
+    def flip(self, xbool, ybool):
+        for i in range(len(self.original_images)):
+            self.original_images[i] = pygame.transform.flip(self.original_images[i], xbool, ybool)
+        self.on_resize()
 
 class SpriteFiller(ActiveSprite):
 
@@ -114,6 +140,8 @@ class ElasticSprite(object):
         self.base_position = base_position
         self.moving_position = list(base_position)
         self.sprite = sprite
+        self.sprite.position = self.base_position
+        self.sprite.size = 0, 0
 
     @property
     def moving_x(self):

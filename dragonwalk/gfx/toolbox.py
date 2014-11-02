@@ -1,6 +1,6 @@
 import pygame
 from pygame.color import THECOLORS
-from dragonwalk.gfx.sprites import AnimatedSprite
+from dragonwalk.gfx.sprites import AnimableSprite
 
 class ToolBox(object):
 
@@ -13,16 +13,17 @@ class ToolBox(object):
         self.size = size
 
     def add(self, other):
-        self.x += self.size[0]
         other.rect.left = self.x
         other.rect.top = self.y
         self.toolbox.add(other)
+        self.x += self.size[0]
+
 
 
     def draw(self, surface):
         self.toolbox.draw(surface)
         if self.active_tool:
-            if isinstance(self.active_tool, AnimatedSprite) and self.active_tool.collectable:
+            if isinstance(self.active_tool, AnimableSprite) and self.active_tool.collectable:
                 pygame.draw.circle(surface, THECOLORS['yellow'], self.active_tool.rect.center, 32, 3)
             else:
                 pygame.draw.rect(surface, THECOLORS['yellow'], self.active_tool.rect, 3)
@@ -35,7 +36,7 @@ class ToolBox(object):
                 sprite.collectable = False
                 self.tool_change_callback(sprite)
                 self.active_tool = sprite
-                if isinstance(self.active_tool, AnimatedSprite):
+                if isinstance(self.active_tool, AnimableSprite):
                     sprite.collectable = True
                     if event.button == 3:
                         sprite.collectable = False

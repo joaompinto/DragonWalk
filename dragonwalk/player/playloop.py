@@ -1,5 +1,5 @@
 import pygame
-from dragonwalk.gfx import Text
+from dragonwalk.gfx import TextBox
 
 class PlayLoop(object):
 
@@ -9,7 +9,7 @@ class PlayLoop(object):
         self.current_level_number = 0
         self.current_level = level_list[self.current_level_number]
 
-        self.text = Text((100, 100))
+        self.text = TextBox((100, 100))
 
     def run(self):
         window = self.window

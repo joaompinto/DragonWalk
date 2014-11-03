@@ -3,11 +3,11 @@ from dragonwalk.gfx import TextBox
 
 class PlayLoop(object):
 
-    def __init__(self, window, player, level_list):
+    def __init__(self, window, level):
         self.window = window
-        self.player = player
+        self.player = level.player_object
         self.current_level_number = 0
-        self.current_level = level_list[self.current_level_number]
+        self.current_level = level
 
         self.text = TextBox((100, 100))
 

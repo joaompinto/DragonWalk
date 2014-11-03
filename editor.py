@@ -3,6 +3,7 @@ import sys
 from os.path import exists
 from dragonwalk.editor.window import TopWindow
 from dragonwalk.editor.cmdline import command_line_parser
+from dragonwalk.player import Level
 
 def main():
     (options, args) = command_line_parser().parse_args()
@@ -28,7 +29,8 @@ def main():
 
     editor = TopWindow(filename)
     if must_load:
-        editor.load()
+        level = Level.load(editor.window, filename)
+        editor.update_from_level(level)
     editor.run_event_loop()
 
 if __name__ == "__main__":

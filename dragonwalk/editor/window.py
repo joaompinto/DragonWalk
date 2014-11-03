@@ -6,8 +6,6 @@ from pygame import Rect
 from pygame.color import THECOLORS
 from dragonwalk.gfx import ElasticSprite, SpriteFiller, AnimableSprite, ToolBox
 from dragonwalk.player import Player, Level, PlayLoop
-from dragonwalk.yattag import Doc, indent
-from xml.dom import minidom
 
 
 class TopWindow(object):
@@ -35,7 +33,6 @@ class TopWindow(object):
         self.message = None
         self.level_filename = level_filename
         self.background = None
-
         self.set_background('data/backgrounds/sky1.png')
 
         for filename in glob('data/blocks/*.png')+glob('data/blocks/*.jpg'):
@@ -64,12 +61,13 @@ class TopWindow(object):
         file_image = pygame.image.load(filename).convert()
         pygame.transform.smoothscale(file_image, (background.get_width(), background.get_height()), background)
         self.background = background
+        self.background_filename = filename
 
     def run_event_loop(self):
 
         while not self.quit_requested:
             if self.is_play_mode:
-                self.run_play_loop()
+                self.run_play_mode()
             else:
 
                 while self.handle_events():
@@ -81,10 +79,7 @@ class TopWindow(object):
     def set_msg(self, text):
         self.message = self.font.render(text, True, THECOLORS['black'], THECOLORS['white'])
 
-    def run_play_loop(self):
-        self.is_play_mode = False
-        if not self.player_object:
-            return
+    def build_level_from_editor(self):
         collide_object_list = pygame.sprite.Group()
         collect_object_list = pygame.sprite.Group()
         for obj in self.active_object_list:
@@ -99,8 +94,27 @@ class TopWindow(object):
                 collide_object_list.add(obj)
         player = Player(self.player_object.copy())
         player.position = self.player_object.position
-        levels = [Level(self.window.get_size(), self.window, player, collide_object_list, collect_object_list)]
-        playloop = PlayLoop(self.window, player, levels)
+        return Level(self.window.get_size(), self.window, player,
+                     collide_object_list,
+                     collect_object_list,
+                     self.background_filename)
+
+    def update_from_level(self, level):
+        self.active_object_list = pygame.sprite.Group()
+        for obj in level.collect_object_list:
+            self.active_object_list.add(obj)
+        for obj in level.collide_object_list:
+            self.active_object_list.add(obj)
+        self.player_object = level.player_object
+        self.active_object_list.add(self.player_object)
+        self.set_background(level.background_file)
+
+    def run_play_mode(self):
+        self.is_play_mode = False
+        if not self.player_object:
+            return
+        level = self.build_level_from_editor()
+        playloop = PlayLoop(self.window, level)
         playloop.run()
 
     def draw(self, surface):
@@ -145,7 +159,8 @@ class TopWindow(object):
                 return False
 
             if event.key == pygame.K_s:
-                self.save()
+                level = self.build_level_from_editor()
+                level.save(self.level_filename)
 
             if event.key in [pygame.K_BACKSPACE, pygame.K_DELETE]:
                 if self.selected_object:
@@ -165,10 +180,12 @@ class TopWindow(object):
 
         colliding_right = colliding_left = colliding_down = colliding_up = False
 
+        delta_x = self.drawing_object.moving_x - self.drawing_object.base_x
+        delta_y = self.drawing_object.moving_y - self.drawing_object.base_y
+
         # Apply horizontal speed and check for horizontal collisions
         self.drawing_object.moving_x += self.hspeed
 
-        delta_x = self.drawing_object.moving_x - self.drawing_object.base_x
         collision_list = pygame.sprite.spritecollide(self.drawing_object.sprite, self.active_object_list, False)
         for collided_object in collision_list:
             if delta_x > 0:
@@ -181,7 +198,7 @@ class TopWindow(object):
         # Apply vertical speed and check for vertical collisions
         self.drawing_object.moving_y += self.vspeed
 
-        delta_y = self.drawing_object.moving_y - self.drawing_object.base_y
+
         collision_list = pygame.sprite.spritecollide(self.drawing_object.sprite, self.active_object_list, False)
         for collided_object in collision_list:
             if delta_y > 0:  # Work-around for bug in an undetermined collision condition
@@ -191,20 +208,7 @@ class TopWindow(object):
                 self.drawing_object.moving_y = collided_object.rect.bottom
                 colliding_up = True
 
-        # Adjust based on ratio
-        if isinstance(self.drawing_object.sprite, AnimableSprite):
-            if self.drawing_object.sprite.size[0] > self.drawing_object.sprite.size[1]:
-                ratio_w = self.drawing_object.sprite.size[1] / self.drawing_object.sprite.ratio
-                if delta_x > 0:
-                    self.drawing_object.moving_x = self.drawing_object.base_x + ratio_w
-                else:
-                    self.drawing_object.moving_x = self.drawing_object.base_x - ratio_w
-            else:
-                ratio_h = self.drawing_object.sprite.size[0] * self.drawing_object.sprite.ratio
-                if delta_y > 0:
-                    self.drawing_object.moving_y = self.drawing_object.base_y + ratio_h
-                else:
-                    self.drawing_object.moving_y = self.drawing_object.base_y - ratio_h
+
 
 
         # If colliding only move in the collision opposite direction
@@ -280,65 +284,6 @@ class TopWindow(object):
         y = round(y/GRID)*GRID
         return x, y
 
-    def save(self):
-        background_file_name = 'data/backgrounds/sky1.png'
-        doc, tag, text = Doc().tagtext()
-        with tag('level', size=','.join([str(x) for x in self.size])):
-            with tag('background', filename=background_file_name): pass
-            if self.player_object:
-                with tag('player', position=','.join([str(x) for x in self.player_object.position])
-                     , size=','.join([str(x) for x in self.player_object.size])
-                    , image_list=','.join(self.player_object.image_filename_list)):
-                    pass
-            with tag('map'):
-                for obj in self.active_object_list:
-                    if obj == self.player_object:
-                        continue
-                    if isinstance(obj, SpriteFiller):
-                        with tag('spritefiller', position=','.join([str(x) for x in obj.position])
-                            , size=','.join([str(x) for x in obj.size])
-                            , image_list=','.join(obj.image_filename_list)):
-                            pass
-                    if isinstance(obj, AnimableSprite):
-                        with tag('animablesprite', position=','.join([str(x) for x in obj.position])
-                            , size=','.join([str(x) for x in obj.size])
-                            , image_list=','.join(obj.image_filename_list)
-                            , is_collectable=str(obj.collectable)):
-                            pass
-
-        with open(self.level_filename, 'w') as save_file:
-            save_file.write(indent(doc.getvalue()))
-
-    def load(self):
-        xmldoc = minidom.parse(self.level_filename)
-        background = xmldoc.getElementsByTagName('background')[0]
-        background_filename = background.attributes['filename'].value
-        self.set_background(background_filename)
-        player = xmldoc.getElementsByTagName('player')
-
-        if player:
-            player_info = player[0]
-            position = [int(i) for i in player_info.attributes['position'].value.split(',')]
-            size = [int(i) for i in player_info.attributes['size'].value.split(',')]
-            image_list = player_info.attributes['image_list'].value.split(',')
-            sprite = AnimableSprite(position, size,  image_list)
-            self.active_object_list.add(sprite)
-            self.player_object = sprite
-
-        for sprite_info in xmldoc.getElementsByTagName('spritefiller'):
-            position = [int(i) for i in sprite_info.attributes['position'].value.split(',')]
-            size = [int(i) for i in sprite_info.attributes['size'].value.split(',')]
-            image_list = sprite_info.attributes['image_list'].value.split(',')
-            sprite = SpriteFiller(position, size, image_list)
-            self.active_object_list.add(sprite)
-
-        for sprite_info in xmldoc.getElementsByTagName('animablesprite'):
-            position = [int(i) for i in sprite_info.attributes['position'].value.split(',')]
-            size = [int(i) for i in sprite_info.attributes['size'].value.split(',')]
-            image_list = sprite_info.attributes['image_list'].value.split(',')
-            sprite = AnimableSprite(position, size,  image_list)
-            sprite.collectable = (sprite_info.attributes['is_collectable'].value == 'True')
-            self.active_object_list.add(sprite)
 
 
 

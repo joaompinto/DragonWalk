@@ -2,13 +2,14 @@
   <background filename="data/backgrounds/sky1.png"></background>
   <player position="50,870" image_list="data/objects/Smok.png,data/objects/Smok_walking.png" size="70,80"></player>
   <map>
-    <animablesprite position="1090,550" image_list="data/objects/Songbird-egg.png" is_collectable="True" size="70,80"></animablesprite>
     <spritefiller position="520,790" image_list="data/blocks/TilesYellow_185.jpg" size="170,30"></spritefiller>
     <spritefiller position="290,870" image_list="data/blocks/TilesYellow_185.jpg" size="130,30"></spritefiller>
+    <spritefiller position="1160,0" image_list="data/blocks/TilesRed_183.jpg" size="40,630"></spritefiller>
     <spritefiller position="1010,630" image_list="data/blocks/TilesRed_183.jpg" size="190,120"></spritefiller>
     <spritefiller position="800,720" image_list="data/blocks/TilesYellow_185.jpg" size="210,30"></spritefiller>
-    <spritefiller position="1160,0" image_list="data/blocks/TilesRed_183.jpg" size="40,630"></spritefiller>
+    <spritefiller position="270,650" image_list="data/blocks/TilesYellow_185.jpg" size="130,30"></spritefiller>
     <spritefiller position="0,950" image_list="data/blocks/TilesYellow_185.jpg" size="1200,50"></spritefiller>
     <spritefiller position="1160,750" image_list="data/blocks/TilesRed_183.jpg" size="40,200"></spritefiller>
+    <animablesprite position="1090,550" image_list="data/objects/Songbird-egg.png" is_collectable="True" size="70,80"></animablesprite>
   </map>
 </level>

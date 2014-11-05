@@ -30,7 +30,7 @@ def main():
     editor = TopWindow(filename)
     if must_load:
         level = Level.load(editor.window, filename)
-        editor.update_from_level(level)
+        editor.update_editor_from_level(level)
     editor.run_event_loop()
 
 if __name__ == "__main__":

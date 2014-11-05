@@ -24,17 +24,18 @@ class TopWindow(object):
         self.player_object = None
         self.drawing_object = None  # Object currently being drawn
         self.selected_object = None
-        self.hspeed = 0
-        self.vspeed = 0
+        self.copy_object = None
+        self.hspeed = self.vspeed = 0
         self.is_mouse_down = False
         self.is_play_mode = False
         self.quit_requested = False
         self.font = pygame.font.SysFont("Times New Roman", 30)
         self.message = None
         self.level_filename = level_filename
-        self.background = None
+        self.background = self.background_filename = None
         self.set_background('data/backgrounds/sky1.png')
 
+        # Load blocks to the toolbox
         for filename in glob('data/blocks/*.png')+glob('data/blocks/*.jpg'):
             if "-filler.png" in filename:
                 continue
@@ -69,7 +70,6 @@ class TopWindow(object):
             if self.is_play_mode:
                 self.run_play_mode()
             else:
-
                 while self.handle_events():
                     self.draw(self.window)
                     self.clock.tick(self.frames_per_second)
@@ -99,7 +99,7 @@ class TopWindow(object):
                      collect_object_list,
                      self.background_filename)
 
-    def update_from_level(self, level):
+    def update_editor_from_level(self, level):
         self.active_object_list = pygame.sprite.Group()
         for obj in level.collect_object_list:
             self.active_object_list.add(obj)
@@ -118,12 +118,14 @@ class TopWindow(object):
         playloop.run()
 
     def draw(self, surface):
-        #self.window.fill(pygame.Color(200, 200, 200))
         surface.blit(self.background, (0, 0))
         self.active_object_list.draw(surface)
         if self.drawing_object:
             sprite = self.drawing_object.sprite
-            #print "Drawing", sprite.position, sprite.size, sprite.image
+            surface.blit(sprite.image, sprite.position)
+            pygame.draw.rect(surface, THECOLORS['red'], sprite.rect, 1)
+        if self.copy_object:
+            sprite = self.copy_object
             surface.blit(sprite.image, sprite.position)
             pygame.draw.rect(surface, THECOLORS['red'], sprite.rect, 1)
         if self.selected_object:
@@ -134,13 +136,11 @@ class TopWindow(object):
         if self.player_object:
             rect = self.player_object.rect
             max_r = 10
-            #max_r = min(rect.width, rect.height)/2
             pygame.draw.circle(surface, THECOLORS['white'], rect.center, max_r, 2)
             pygame.draw.circle(surface, THECOLORS['white'], rect.center, max_r-5, 2)
 
         self.toolbox.draw(surface)
         pygame.display.update()
-
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -157,6 +157,16 @@ class TopWindow(object):
             if event.key == pygame.K_ESCAPE:
                 self.is_play_mode = True
                 return False
+
+            if event.key == pygame.K_c:
+                if not self.selected_object:
+                    return
+                adjusted_mouse_pos = self.adjust_to_grid(pygame.mouse.get_pos())
+                new_pos_rect = Rect(adjusted_mouse_pos, self.selected_object.size)
+                collision_list = [s for s in self.active_object_list.sprites() if s.rect.colliderect(new_pos_rect)]
+                if not collision_list:
+                    self.copy_object = self.selected_object.copy()
+                    self.copy_object.position = adjusted_mouse_pos
 
             if event.key == pygame.K_s:
                 level = self.build_level_from_editor()
@@ -198,7 +208,6 @@ class TopWindow(object):
         # Apply vertical speed and check for vertical collisions
         self.drawing_object.moving_y += self.vspeed
 
-
         collision_list = pygame.sprite.spritecollide(self.drawing_object.sprite, self.active_object_list, False)
         for collided_object in collision_list:
             if delta_y > 0:  # Work-around for bug in an undetermined collision condition
@@ -238,15 +247,26 @@ class TopWindow(object):
         adjusted_mouse_pos = self.adjust_to_grid(mouse_pos)
 
         if event.type == pygame.MOUSEMOTION:
+            if self.copy_object:  #copying object
+                new_pos_rect = Rect((mouse_pos), self.copy_object.size)
+                collision_list = [s for s in self.active_object_list.sprites() if s.rect.colliderect(new_pos_rect)]
+                if not collision_list:
+                    self.copy_object.position = adjusted_mouse_pos
+
             if self.is_mouse_down:
                 if self.drawing_object:
-
                     self.move_unless_colliding()
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             self.is_mouse_down = True
             if self.toolbox.handle_events(event):
                 return
+            if self.copy_object:
+                self.active_object_list.add(self.copy_object)
+                self.selected_object = self.copy_object
+                self.copy_object = None
+                return
+
             self.selected_object = None
 
             collision_list = [s for s in self.active_object_list.sprites() if s.rect.collidepoint(mouse_pos)]
@@ -271,6 +291,7 @@ class TopWindow(object):
                 if self.drawing_object.sprite.rect.width > 0 and self.drawing_object.sprite.rect.height > 0:
                     self.drawing_object.sprite.collectable = self.selected_tool_object.collectable
                     self.active_object_list.add(self.drawing_object.sprite)
+                    self.selected_object = self.drawing_object.sprite
             self.drawing_object = None
 
     def on_toolbox_change(self, sprite):

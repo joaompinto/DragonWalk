@@ -1,17 +1,19 @@
 #!/usr/bin/python
 import sys
-from os.path import exists
+from os.path import exists, join
 from dragonwalk.editor.window import TopWindow
 from dragonwalk.editor.cmdline import command_line_parser
 from dragonwalk.player import Level
 
 def main():
     (options, args) = command_line_parser().parse_args()
-    if len(args) <1:
-        print "Usage: %s [-n ] level_file.xml" % sys.argv[0]
-        sys.exit(0)
-    filename = args[0]
-    must_load = False
+
+    if len(args) < 1:
+        filename = join('levels', 'simple.xml')
+        must_load = False
+    else:
+        filename = args[0]
+        must_load = False
 
     if not filename.endswith('.xml'):
         print "Filename must end with .xml"

@@ -6,6 +6,7 @@ from xml.dom import minidom
 import pymunk
 import math
 from pymunk import Vec2d
+from pygame.color import THECOLORS
 
 
 class Level(object):
@@ -44,6 +45,8 @@ class Level(object):
     def restore_pos(self):
         for element, saved_pos in self._pos:
             element.position = saved_pos
+            element.angle = 0
+            element.on_rotate()
 
     def flipy(self, y):
         """Small hack to convert chipmunk physics to pygame coordinates"""
@@ -54,13 +57,13 @@ class Level(object):
         for element in self.collect_object_list:
             width, height = element.size
             mass = width * height
-            vs = [(0, 0), (width, 0), (width, -height), (0, -height)]
+            vs = [(-width/2, height/2), (width/2, height/2), (width/2, -height/2), (-width/2, -height/2)]
             moment = pymunk.moment_for_poly(mass, vs)
             body = pymunk.Body(mass, moment)
             shape = pymunk.Poly(body, vs)
             shape.friction = 1
-            body.position = element.position[0], self.flipy(element.position[1])
-            body.angle = 0
+            body.position = element.position[0]+width/2, self.flipy(element.position[1]+height/2)
+            body.angle = math.pi
             self.space.add(body, shape)
             self.dynamic_object.append((element, shape))
 
@@ -69,6 +72,9 @@ class Level(object):
             x, y = element.position[0], self.flipy(element.position[1])
             width, height = element.size[0], element.size[1]
             static_lines = [pymunk.Segment(static_body, (x, y), (x+width, y), 0.0),
+                            pymunk.Segment(static_body, (x+width, y), (x+width, y-height), 0.0),
+                            pymunk.Segment(static_body, (x+width, y-height), (x, y-height), 0.0),
+                            pymunk.Segment(static_body, (x, y-height), (x, y), 0.0),
                             ]
             for l in static_lines:
                 l.friction = 0.5
@@ -91,7 +97,6 @@ class Level(object):
             x, y = shape.body.position
             y = self.flipy(y)
             element.position = x, y
-            print(element.angle)
             element.angle = shape.body.angle
 
     def draw(self, window):
@@ -99,10 +104,28 @@ class Level(object):
             window.blit(self.background, (0, 0))
         else:
             window.fill(pygame.color.THECOLORS['black'])
-        for element in self.dynamic_object:
-            print(element)
         self.collide_object_list.draw(window)
-        self.collect_object_list.draw(window)
+        for element in self.collect_object_list:
+            element.on_rotate()
+        for element, shape in self.dynamic_object:
+            p = shape.body.position
+            p = Vec2d(p.x, self.flipy(p.y))
+            # we need to rotate 180 degrees because of the y coordinate flip
+            angle_degrees = math.degrees(shape.body.angle) + 180
+            rotated_logo_img = pygame.transform.rotate(element.scaled_image, angle_degrees)
+
+            offset = Vec2d(rotated_logo_img.get_size()) / 2.
+            p = p - offset
+            window.blit(rotated_logo_img, p)
+            # debug draw
+            #ps = shape.get_vertices()
+            #ps = [(p.x, self.flipy(p.y)) for p in ps]
+            #ps += [ps[0]]
+            #pygame.draw.lines(window, THECOLORS["red"], False, ps, 1)
+
+
+
+        #self.collect_object_list.draw(window)
 
     def shift_world(self, shift_x, shift_y):
         self.world_shift_x += shift_x

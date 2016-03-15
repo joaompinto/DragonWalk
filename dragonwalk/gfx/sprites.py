@@ -58,14 +58,15 @@ class AnimableSprite(ActiveSprite):
         super(AnimableSprite, self).on_resize()
         original_image = self.original_images[self._selected_image_pos]
 
-
-
         new_width, new_height = self.rect.size
         #new_width = min(self.rect.width, original_image.get_width())
         #new_height = min(self.rect.height,  original_image.get_height())
-        self.image = pygame.transform.smoothscale(original_image, (self.rect.width, self.rect.height))
+        self.scaled_image = pygame.transform.smoothscale(original_image, (self.rect.width, self.rect.height))
+        self.image = self.scaled_image
+
+    def on_rotate(self):
         if self.angle != self.old_angle:
-            self.image = pygame.transform.rotate(original_image, self.angle)
+            self.image = pygame.transform.rotate(self.scaled_image, self.angle)
             self.old_angle = self.angle
 
     def copy(self):

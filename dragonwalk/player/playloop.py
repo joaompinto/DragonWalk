@@ -15,6 +15,7 @@ class PlayLoop(object):
         window = self.window
         frames_per_second = 60
         current_level = self.current_level
+        current_level.backup_pos()
         player = self.player
         clock = pygame.time.Clock()
         running = True
@@ -26,6 +27,7 @@ class PlayLoop(object):
             if event.type == pygame.QUIT or \
                     (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 running = False
+
 
             # Update functions
             player.update(current_level.collide_object_list, event)
@@ -47,3 +49,5 @@ class PlayLoop(object):
 
             # Update the screen
             pygame.display.update()
+
+        current_level.restore_pos()

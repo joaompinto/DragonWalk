@@ -1,15 +1,7 @@
 <level size="1200,1000">
   <background filename="data/backgrounds/sky1.png"></background>
-  <player image_list="data/objects/Smok.png,data/objects/Smok_walking.png" position="50,870" size="70,80"></player>
+  <player size="80,90" position="100,870" image_list="data/objects/Smok.png,data/objects/Smok_walking.png"></player>
   <map>
-    <spritefiller image_list="data/blocks/Bricks.jpg" position="570,610" size="180,60"></spritefiller>
-    <spritefiller image_list="data/blocks/TilesYellow_185.jpg" position="350,530" size="170,100"></spritefiller>
-    <animablesprite image_list="data/objects/box.png" position="280,100" size="70,80" is_collectable="True"></animablesprite>
-    <animablesprite image_list="data/objects/box.png" position="550,140" size="90,100" is_collectable="True"></animablesprite>
-    <spritefiller image_list="data/blocks/TilesYellow_185.jpg" position="0,950" size="1200,50"></spritefiller>
-    <spritefiller image_list="data/blocks/Bricks.jpg" position="750,270" size="140,70"></spritefiller>
-    <spritefiller image_list="data/blocks/TilesYellow_185.jpg" position="110,370" size="330,70"></spritefiller>
-    <spritefiller image_list="data/blocks/Bricks.jpg" position="470,260" size="90,50"></spritefiller>
-    <animablesprite image_list="data/objects/box.png" position="690,150" size="80,60" is_collectable="True"></animablesprite>
+    <spritefiller size="1200,40" position="0,960" image_list="data/blocks/Bricks.jpg"></spritefiller>
   </map>
 </level>

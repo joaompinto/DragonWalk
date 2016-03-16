@@ -46,7 +46,6 @@ class Level(object):
         for element, saved_pos in self._pos:
             element.position = saved_pos
             element.angle = 0
-            element.on_rotate()
 
     def flipy(self, y):
         """Small hack to convert chipmunk physics to pygame coordinates"""
@@ -57,10 +56,15 @@ class Level(object):
         for element in self.collect_object_list:
             width, height = element.size
             mass = width * height
-            vs = [(-width/2, height/2), (width/2, height/2), (width/2, -height/2), (-width/2, -height/2)]
-            moment = pymunk.moment_for_poly(mass, vs)
-            body = pymunk.Body(mass, moment)
-            shape = pymunk.Poly(body, vs)
+            if element.is_circle:
+                moment = pymunk.moment_for_circle(mass, 0, 100)
+                body = pymunk.Body(mass, moment)
+                shape = pymunk.Circle(body, width/2)
+            else:
+                vs = [(-width/2, height/2), (width/2, height/2), (width/2, -height/2), (-width/2, -height/2)]
+                moment = pymunk.moment_for_poly(mass, vs)
+                body = pymunk.Body(mass, moment)
+                shape = pymunk.Poly(body, vs)
             shape.friction = 1
             body.position = element.position[0]+width/2, self.flipy(element.position[1]+height/2)
             body.angle = math.pi
@@ -105,8 +109,6 @@ class Level(object):
         else:
             window.fill(pygame.color.THECOLORS['black'])
         self.collide_object_list.draw(window)
-        for element in self.collect_object_list:
-            element.on_rotate()
         for element, shape in self.dynamic_object:
             p = shape.body.position
             p = Vec2d(p.x, self.flipy(p.y))

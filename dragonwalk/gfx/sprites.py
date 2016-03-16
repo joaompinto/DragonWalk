@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 import pygame
 from pygame import Rect
+from os.path import basename
 
 class ActiveSprite(pygame.sprite.Sprite):
     """
@@ -43,6 +44,9 @@ class AnimableSprite(ActiveSprite):
     def __init__(self, position, size, image_filename_list):
         super(AnimableSprite, self).__init__(position, size)
         self.original_images = []
+        self.is_circle = False
+        if basename(image_filename_list[0])[0] == 'c':
+            self.is_circle = True
         for filename in image_filename_list:
             original_file = pygame.image.load(filename).convert_alpha()
             self.original_images.append(original_file)
@@ -64,10 +68,6 @@ class AnimableSprite(ActiveSprite):
         self.scaled_image = pygame.transform.smoothscale(original_image, (self.rect.width, self.rect.height))
         self.image = self.scaled_image
 
-    def on_rotate(self):
-        if self.angle != self.old_angle:
-            self.image = pygame.transform.rotate(self.scaled_image, self.angle)
-            self.old_angle = self.angle
 
     def copy(self):
         return AnimableSprite(self.position, self.size, self._image_filename_list)
@@ -188,6 +188,12 @@ class ElasticSprite(object):
         block_delta_x = self.moving_position[0] - self.base_position[0]
         block_delta_y = self.moving_position[1] - self.base_position[1]
         width, height = abs(block_delta_x), abs(block_delta_y)
+        try:
+            is_circle = getattr(self.sprite, 'is_circle')
+        except AttributeError:
+            is_circle = False
+        if is_circle:
+            width = height = max(width, height)
         new_x = self.moving_position[0] if block_delta_x < 0 else self.base_position[0]
         new_y = self.moving_position[1] if block_delta_y < 0 else self.base_position[1]
         self.sprite.position = new_x, new_y

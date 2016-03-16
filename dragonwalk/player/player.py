@@ -1,4 +1,5 @@
 import pygame
+from pygame.draw import circle
 from dragonwalk.gfx.sprites import AnimableSprite
 
 RIGHT = 1
@@ -18,6 +19,11 @@ class Player(pygame.sprite.Sprite):
         self.sprite = sprite
         self.walk_step = 0
         self.walk_step_points = walk_step_points
+        self._is_shooting = False
+
+    @property
+    def is_shooting(self):
+        return self._is_shooting
 
     @property
     def position(self):
@@ -36,7 +42,7 @@ class Player(pygame.sprite.Sprite):
         self._level = level
 
     def update(self, collidable=pygame.sprite.Group(), event=None):
-
+        self._is_shooting = False
         hitting_the_ground_boundary = False
         self.experience_gravity()
 
@@ -79,6 +85,7 @@ class Player(pygame.sprite.Sprite):
                 if event.key in [pygame.K_UP, pygame.K_SPACE]:
                     if hitting_the_ground_boundary or len(collision_list) > 0:  # Only jump when hitting in the ground
                         self.vspeed = -self.speed*2
+                    self._is_shooting = True
 
             if event.type == pygame.KEYUP:  # Reset current speed
                 if event.key == pygame.K_LEFT:
@@ -113,3 +120,7 @@ class Player(pygame.sprite.Sprite):
 
     def draw(self, surface):
         surface.blit(self.sprite.image, self.rect)
+        offset = 20
+        #if self.face_direction == RIGHT:
+        #    offset = self.rect.width-20
+        #circle(surface, (255, 0, 0), (self.rect.x+offset, self.rect.y+self.rect.height), 5, 5)

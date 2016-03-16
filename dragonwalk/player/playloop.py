@@ -31,12 +31,15 @@ class PlayLoop(object):
 
             # Update functions
             player.update(current_level.collide_object_list, event)
+            if player.is_shooting:
+                current_level.shoot()
+
             current_level.update()
 
             # Logic Testing
             current_level.run_viewbox()
-            if current_level.clear_collected(player):
-                self.text.text = "Level Completed!"
+            #if current_level.clear_collected(player):
+            #    self.text.text = "Level Completed!"
 
             # Draw everything
             current_level.draw(window)

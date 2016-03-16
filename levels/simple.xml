@@ -1,7 +1,12 @@
 <level size="1200,1000">
   <background filename="data/backgrounds/sky1.png"></background>
-  <player size="80,90" position="100,870" image_list="data/objects/Smok.png,data/objects/Smok_walking.png"></player>
+  <player position="100,870" size="80,90" image_list="data/objects/Smok.png,data/objects/Smok_walking.png"></player>
   <map>
-    <spritefiller size="1200,40" position="0,960" image_list="data/blocks/Bricks.jpg"></spritefiller>
+    <spritefiller position="0,960" size="1200,40" image_list="data/blocks/Bricks.jpg"></spritefiller>
+    <spritefiller position="670,810" size="30,150" image_list="data/blocks/TilesRed_183.jpg"></spritefiller>
+    <spritefiller position="0,60" size="20,900" image_list="data/blocks/Bricks.jpg"></spritefiller>
+    <animablesprite position="640,720" is_collectable="True" size="90,90" image_list="data/objects/Box.png"></animablesprite>
+    <animablesprite position="290,440" is_collectable="True" size="70,70" image_list="data/objects/cSoccerBall.png"></animablesprite>
+    <spritefiller position="1180,0" size="20,960" image_list="data/blocks/Bricks.jpg"></spritefiller>
   </map>
 </level>

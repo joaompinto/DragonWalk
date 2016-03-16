@@ -8,6 +8,8 @@ import math
 from pymunk import Vec2d
 from pygame.color import THECOLORS
 
+RIGHT = 1
+LEFT = 2
 
 class Level(object):
     def __init__(self, size, window, player_object,
@@ -60,12 +62,13 @@ class Level(object):
                 moment = pymunk.moment_for_circle(mass, 0, 100)
                 body = pymunk.Body(mass, moment)
                 shape = pymunk.Circle(body, width/2)
+                body.elasticity = 0.9
             else:
                 vs = [(-width/2, height/2), (width/2, height/2), (width/2, -height/2), (-width/2, -height/2)]
                 moment = pymunk.moment_for_poly(mass, vs)
                 body = pymunk.Body(mass, moment)
                 shape = pymunk.Poly(body, vs)
-            shape.friction = 1
+            shape.friction = 0.6
             body.position = element.position[0]+width/2, self.flipy(element.position[1]+height/2)
             body.angle = math.pi
             self.space.add(body, shape)
@@ -128,6 +131,25 @@ class Level(object):
 
 
         #self.collect_object_list.draw(window)
+
+    def shoot(self):
+        player = self.player_object
+        offset = 20
+        if player.face_direction == RIGHT:
+            offset = player.rect.width-20
+        kick_point = player.position[0]+offset, self.flipy(player.rect.y+player.rect.height)
+        for element, shape in self.dynamic_object:
+            if shape.point_query(kick_point):
+                body = shape.body
+                delta_x, delta_y = kick_point[0] - shape.body.position[0], kick_point[1] - shape.body.position[1]
+                if abs(delta_x) > 10:
+                    delta_x = math.copysign(10, delta_x)
+                if abs(delta_y) > 10:
+                    delta_y = math.copysign(10, delta_y)
+                body.velocity.y -= delta_y*50
+                body.velocity.x -= delta_x*60
+                #shape.body.apply_impulse((-100, 0), (0, 0))
+                print("Something was kicked", delta_x, delta_y)
 
     def shift_world(self, shift_x, shift_y):
         self.world_shift_x += shift_x
